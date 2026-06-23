@@ -89,9 +89,14 @@ $PokiDestHtml = Join-Path $TempDir "poki\index.html"
 # Copy icon (excluding facebook configuration for Poki security review)
 Copy-Item -Path $AppIcon -Destination (Join-Path $TempDir "poki\app_icon.png") -Force
 
+# Sync to workspace poki_release folder for GitHub Pages hosting
+$PokiReleaseDir = Join-Path $WorkspaceDir "poki_release"
+if (-not (Test-Path $PokiReleaseDir)) { New-Item -ItemType Directory -Path $PokiReleaseDir -Force | Out-Null }
+Copy-Item -Path (Join-Path $TempDir "poki\*") -Destination $PokiReleaseDir -Recurse -Force
+
 # Compress Poki Package
 Compress-Archive -Path (Join-Path $TempDir "poki\*") -DestinationPath $PokiZip -Force
-Write-Host "[✓] Poki 패키지 생성 완료: StackColorRush_Poki.zip" -ForegroundColor Green
+Write-Host "[✓] Poki 패키지 생성 완료: StackColorRush_Poki.zip (poki_release 폴더 동기화 완료)" -ForegroundColor Green
 
 # ==========================================
 # 4. Clean up temp folder

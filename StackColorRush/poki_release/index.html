@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stack Color Rush</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for gaming icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for sleek typography -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    
+    
+    <!-- Poki SDK -->
+    <script src="https://game-cdn.poki.com/binaries/v4/poki-sdk.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            background-color: #030712;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism styling */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Neon glowing text & box shadows */
+        .neon-glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .neon-glow-rainbow {
+            animation: rainbow-shadow 2s linear infinite;
+        }
+
+        @keyframes rainbow-shadow {
+            0% {
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+            }
+
+            25% {
+                box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+            }
+
+            75% {
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            }
+
+            100% {
+                box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+            }
+        }
+    </style>
+</head>
+
+<body class="text-slate-100 flex flex-col justify-between h-screen w-screen overflow-hidden">
+
+    <!-- Global Error Overlay for Debugging -->
+    <div id="global-error-overlay"
+        class="hidden fixed top-0 inset-x-0 bg-red-600 text-white px-4 py-3 z-[9999] text-xs font-mono flex flex-col space-y-1 shadow-lg max-h-[40vh] overflow-y-auto">
+        <div class="flex items-center justify-between font-bold border-b border-red-500 pb-1.5 mb-1 text-sm">
+            <span>⚠️ JavaScript Runtime Error Detected</span>
+            <button onclick="document.getElementById('global-error-overlay').classList.add('hidden')"
+                class="bg-red-800 hover:bg-red-900 text-white rounded px-2 py-0.5 text-xs">Close</button>
+        </div>
+        <div id="global-error-msg" class="font-bold"></div>
+        <pre id="global-error-stack" class="text-[10px] opacity-90 whitespace-pre-wrap mt-1"></pre>
+    </div>
+
+    <!-- Game Header -->
+    <header class="bg-slate-950 border-b border-slate-900 px-4 py-2 flex items-center justify-between z-50">
+        <div class="flex items-center space-x-2">
+            <button onclick="exitGame()" class="text-slate-400 hover:text-white transition focus:outline-none">
+                <i class="fa-solid fa-chevron-left text-lg"></i>
+            </button>
+            <div class="flex items-center space-x-1.5">
+                <h1 class="text-sm font-bold text-slate-200 tracking-tight">Stack Color Rush ⚡</h1>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center bg-slate-900 rounded-full px-2.5 py-1 border border-slate-800">
+                <i class="fa-solid fa-coins text-yellow-400 text-xs mr-1.5"></i>
+                <span id="global-coins" class="text-xs font-bold text-yellow-300">0</span>
+            </div>
+            <button class="text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Context -->
+    <main
+        class="flex-grow flex flex-col items-center justify-center p-0 relative w-full overflow-hidden max-w-md mx-auto">
+
+        <!-- SCREEN 1: Home Lobby Screen -->
+        <div id="screen-home"
+            class="absolute inset-0 z-30 w-full flex flex-col justify-between py-6 px-4 space-y-4 bg-slate-950/90">
+            <div class="text-center my-auto space-y-4">
+                <div
+                    class="inline-flex items-center justify-center bg-gradient-to-tr from-cyan-500 via-indigo-500 to-pink-500 p-0.5 rounded-3xl neon-glow-cyan">
+                    <div class="bg-slate-950 px-8 py-8 rounded-3xl flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-layer-group text-6xl text-cyan-400 animate-bounce mb-3"></i>
+                        <span
+                            class="text-3xl font-black uppercase tracking-wider bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-400 bg-clip-text text-transparent">STACK
+                            COLOR</span>
+                        <span class="text-xs text-pink-300 tracking-[0.2em] font-semibold">RUSH RUNNER</span>
+                    </div>
+                </div>
+                <p class="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
+                    Stack blocks of the same color high behind you!<br>Break through color walls and set new records in
+                    the bonus zone!
+                </p>
+            </div>
+
+            <!-- Play Buttons -->
+            <div class="space-y-3 w-full px-2">
+                <button onclick="startGame(false)"
+                    class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg transform active:scale-95 transition-all flex items-center justify-center space-x-3 text-lg neon-glow-cyan">
+                    <i class="fa-solid fa-play text-xl"></i>
+                    <span>START RUN (RUSH)</span>
+                </button>
+                <button onclick="startGame(true)"
+                    class="w-full bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold py-3 px-6 rounded-2xl border border-slate-800 active:scale-95 transition-all flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-bolt text-sm"></i>
+                    <span>START WITH FEVER (AD)</span>
+                </button>
+            </div>
+
+            <!-- Social Lobby Tabs -->
+            <div class="grid grid-cols-3 gap-2 w-full px-2">
+                
+                <button onclick="openTab('skins')"
+                    class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95">
+                    <i class="fa-solid fa-palette text-pink-400 text-lg"></i>
+                    <span class="text-[10px] font-semibold text-slate-300">SKIN SHOP</span>
+                </button>
+                
+            </div>
+        </div>
+
+        <!-- SCREEN 2: Gameplay Canvas View -->
+        <div id="screen-game" class="hidden absolute inset-0 z-10 w-full h-full flex flex-col justify-between">
+            <!-- Game Canvas Container -->
+            <div class="relative w-full h-full flex-grow bg-slate-950">
+                <canvas id="canvas-game" class="w-full h-full block"></canvas>
+
+                <!-- Top HUD HUD -->
+                <div class="absolute top-3 inset-x-3 flex items-center justify-between pointer-events-none z-20">
+                    <!-- Progress & Level -->
+                    <div
+                        class="glass-panel rounded-full px-4 py-1.5 flex items-center space-x-2 text-xs font-bold shadow-lg">
+                        <span class="text-cyan-400 uppercase tracking-widest text-[10px]" id="level-display">Level
+                            1</span>
+                        <div class="w-20 bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div id="progress-bar-fill" class="h-full bg-cyan-400 w-0 transition-all duration-100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Score -->
+                    <div
+                        class="glass-panel rounded-full px-4 py-1.5 flex items-center space-x-1.5 text-xs font-black shadow-lg">
+                        <span class="text-slate-400">SCORE:</span>
+                        <span id="game-score" class="text-white text-sm">0</span>
+                    </div>
+                </div>
+
+                <!-- Fever Gauge Overlay (Bottom screen) -->
+                <div class="absolute bottom-4 inset-x-4 flex flex-col space-y-1.5 pointer-events-none z-20">
+                    <div class="flex items-center justify-between text-[10px] font-bold tracking-wider">
+                        <span class="text-indigo-400 uppercase flex items-center">
+                            <i class="fa-solid fa-fire text-amber-500 mr-1 animate-pulse"></i>FEVER GAUGE
+                        </span>
+                        <span id="fever-text" class="text-indigo-300">0%</span>
+                    </div>
+                    <div
+                        class="w-full bg-slate-950/80 h-3 rounded-full overflow-hidden p-0.5 border border-indigo-900/50 shadow-inner">
+                        <div id="fever-bar-fill"
+                            class="h-full rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-indigo-500 w-0 transition-all duration-200">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Color Indicator Overlay (Center bottom) -->
+                <div
+                    class="absolute bottom-20 left-1/2 -translate-x-1/2 pointer-events-none z-20 flex flex-col items-center">
+                    <span class="text-[9px] uppercase tracking-widest text-slate-400 mb-1">ACTIVE COLOR</span>
+                    <div id="color-indicator-dot"
+                        class="w-6 h-6 rounded-full border-2 border-white shadow-lg animate-pulse"
+                        style="background-color: red;"></div>
+                </div>
+
+                <!-- Mobile Swipe Area & Tap Hint -->
+                <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <div id="drag-tutorial"
+                        class="text-center bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 animate-fade-out opacity-100 transition-opacity duration-1000">
+                        <i class="fa-solid fa-arrows-left-right text-3xl text-cyan-400 animate-bounce mb-1"></i>
+                        <div class="text-[11px] font-bold text-slate-300">Swipe Left/Right to Move</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Leaderboards -->
+        <div id="tab-leaderboard"
+            class="hidden absolute inset-0 bg-slate-950/95 z-40 p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-trophy text-amber-400 text-xl"></i>
+                    <h3 class="text-base font-bold">Leaderboard</h3>
+                </div>
+                <button onclick="closeTab('leaderboard')" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable rankings list -->
+            <div id="leaderboard-list" class="flex-grow my-4 space-y-2.5 overflow-y-auto pr-1">
+                <!-- Loaded dynamically -->
+            </div>
+
+            <button onclick="inviteFriends()"
+                class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-3.5 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 shadow-md">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Invite & Challenge Friends</span>
+            </button>
+        </div>
+
+        <!-- TAB: Skin Shop -->
+        <div id="tab-skins" class="hidden absolute inset-0 bg-slate-950/95 z-40 p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-palette text-pink-400 text-xl"></i>
+                    <h3 class="text-base font-bold">Slime & Block Skins</h3>
+                </div>
+                <button onclick="closeTab('skins')" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Grid skins list -->
+            <div class="flex-grow my-4 grid grid-cols-2 gap-3 overflow-y-auto align-start">
+                <!-- Skin 1 -->
+                <div id="skin-item-neon" onclick="selectSkin('neon')"
+                    class="border-2 border-cyan-500 bg-slate-900 p-3.5 rounded-xl flex flex-col items-center justify-between cursor-pointer hover:border-cyan-400 transition-all h-32">
+                    <div class="flex space-x-1.5 my-2">
+                        <span class="w-5 h-5 rounded bg-cyan-500 shadow-sm animate-pulse"></span>
+                        <span class="w-5 h-5 rounded bg-pink-500 shadow-sm animate-pulse"></span>
+                    </div>
+                    <div class="text-center w-full">
+                        <div class="text-xs font-bold text-white">Cyber Neon</div>
+                        <div class="text-[9px] text-cyan-400 mt-1 font-semibold">Equipped</div>
+                    </div>
+                </div>
+                <!-- Skin 2 -->
+                <div id="skin-item-wooden" onclick="selectSkin('wooden')"
+                    class="border border-slate-800 bg-slate-900 p-3.5 rounded-xl flex flex-col items-center justify-between cursor-pointer hover:border-amber-700 transition-all h-32">
+                    <div class="flex space-x-1.5 my-2">
+                        <span class="w-5 h-5 rounded bg-amber-800 shadow-sm"></span>
+                        <span class="w-5 h-5 rounded bg-amber-600 shadow-sm"></span>
+                    </div>
+                    <div class="text-center w-full">
+                        <div class="text-xs font-bold text-slate-300">Classic Wood</div>
+                        <div id="skin-cost-wooden"
+                            class="text-[9px] text-yellow-400 mt-1 font-bold flex items-center justify-center">
+                            <i class="fa-solid fa-coins mr-1"></i>500
+                        </div>
+                    </div>
+                </div>
+                <!-- Skin 3 -->
+                <div id="skin-item-retro" onclick="selectSkin('retro')"
+                    class="border border-slate-800 bg-slate-900 p-3.5 rounded-xl flex flex-col items-center justify-between cursor-pointer hover:border-red-700 transition-all h-32">
+                    <div class="flex space-x-1.5 my-2">
+                        <span class="w-5 h-5 rounded bg-red-600 shadow-sm"></span>
+                        <span class="w-5 h-5 rounded bg-blue-600 shadow-sm"></span>
+                    </div>
+                    <div class="text-center w-full">
+                        <div class="text-xs font-bold text-slate-300">Retro Pixel</div>
+                        <div id="skin-cost-retro"
+                            class="text-[9px] text-yellow-400 mt-1 font-bold flex items-center justify-center">
+                            <i class="fa-solid fa-coins mr-1"></i>1000
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Get Coins via Rewarded Ad -->
+            <button onclick="watchRewardedAd('coins')"
+                class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 py-3.5 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 shadow-lg active:scale-95 transition-all">
+                <i class="fa-solid fa-circle-play text-sm"></i>
+                <span>Watch Ad for +500 Coins</span>
+            </button>
+        </div>
+
+        <!-- Custom Confirm Modal (Replaces window.confirm) -->
+        <div id="modal-confirm"
+            class="hidden absolute inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-4">
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-xs text-center space-y-4 shadow-2xl">
+                <div
+                    class="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto text-xl animate-pulse">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <div class="space-y-1">
+                    <h4 class="text-sm font-bold text-white">COLLIDED WITH OBSTACLE!</h4>
+                    <p class="text-[11px] text-slate-400">Watch an ad to revive and continue your score run?</p>
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <button id="confirm-yes-btn"
+                        class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition active:scale-95">
+                        Watch Ad to Revive
+                    </button>
+                    <button id="confirm-no-btn"
+                        class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-2.5 rounded-xl text-xs font-semibold border border-slate-700 transition active:scale-95">
+                        Show Results
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-up: Mock Rewarded Ad Video Player -->
+        <div id="popup-ad" class="hidden absolute inset-0 bg-black z-50 flex flex-col justify-between p-4">
+            <div class="flex items-center justify-between text-slate-400">
+                <div
+                    class="flex items-center space-x-2 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <span class="text-[10px] font-extrabold tracking-wider uppercase text-red-400">Sponsored Ad</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="ad-audio-btn" onclick="toggleAdAudio()" class="text-white hover:text-slate-300">
+                        <i id="ad-audio-icon" class="fa-solid fa-volume-high"></i>
+                    </button>
+                    <!-- Close Ad button -->
+                    <button id="ad-close-btn" onclick="claimAdReward()"
+                        class="text-slate-500 cursor-not-allowed opacity-50 text-sm font-bold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800 flex items-center space-x-1"
+                        disabled>
+                        <span>Close</span>
+                        <span id="ad-timer-countdown">5</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Simple animated ad preview -->
+            <div class="my-auto flex flex-col items-center justify-center text-center space-y-4 px-4">
+                <div
+                    class="w-24 h-24 bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl animate-pulse">
+                    <i class="fa-solid fa-layer-group text-5xl text-white"></i>
+                </div>
+                <h4 class="text-xl font-black text-white tracking-wide">Stack Color Rush 3D</h4>
+                <p class="text-xs text-slate-400 max-w-xs">
+                    "The fastest, most addictive stack running game! Collect matching colors, avoid obstacles, and set
+                    new records!"
+                </p>
+                <div class="h-1.5 w-48 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="ad-progress-bar" class="h-full bg-cyan-400 w-0"></div>
+                </div>
+            </div>
+
+            <div class="w-full text-center">
+                <button
+                    class="bg-blue-600 text-white font-extrabold px-8 py-3 rounded-full text-xs uppercase tracking-wider shadow-lg">
+                    PLAY NOW <i class="fa-solid fa-chevron-right ml-1"></i>
+                </button>
+                <div class="text-[9px] text-slate-600 mt-2">This is a simulated advertisement. Reward will be granted
+                    shortly.</div>
+            </div>
+        </div>
+
+        <!-- Pop-up: Game Results & Scoreboard -->
+        <div id="popup-result" class="hidden absolute inset-0 bg-slate-950/95 z-50 flex flex-col justify-between p-6">
+            <div class="text-center my-auto space-y-5">
+                <div id="result-badge-container" class="inline-flex p-1 rounded-full bg-gradient-to-r mx-auto">
+                    <!-- Dynamic badge -->
+                </div>
+
+                <h2 id="result-title" class="text-3xl font-black italic uppercase tracking-wider">STAGE CLEAR</h2>
+                <p id="result-desc" class="text-xs text-slate-400 px-4 max-w-xs mx-auto">Use your stack tower to break
+                    through bonus multipliers!</p>
+
+                <!-- Stats summary -->
+                <div
+                    class="bg-slate-900 border border-slate-800 rounded-2xl p-4 max-w-sm mx-auto grid grid-cols-2 divide-x divide-slate-800">
+                    <div class="flex flex-col items-center p-2">
+                        <span class="text-[10px] text-cyan-400 font-extrabold uppercase">FINAL SCORE</span>
+                        <span id="result-score" class="text-2xl font-black text-white">0</span>
+                    </div>
+                    <div class="flex flex-col items-center p-2">
+                        <span class="text-[10px] text-pink-400 font-extrabold uppercase">BONUS MULTIPLIER</span>
+                        <span id="result-multiplier" class="text-2xl font-black text-white">x1.0</span>
+                    </div>
+                </div>
+
+                <!-- Reward box info -->
+                <div
+                    class="flex items-center justify-center space-x-2 text-yellow-300 bg-yellow-950/30 border border-yellow-800/30 rounded-xl py-2.5 max-w-xs mx-auto text-sm font-bold">
+                    <i class="fa-solid fa-coins"></i>
+                    <span>Coins Earned: +<span id="result-reward-amount">0</span></span>
+                </div>
+            </div>
+
+            <!-- Action buttons bottom -->
+            <div class="space-y-3 w-full">
+                <!-- Rewarded Gold Boost -->
+                <button id="btn-gold-boost" onclick="watchRewardedAd('boost')"
+                    class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black py-4 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center space-x-2 shadow-lg active:scale-95 transition-all">
+                    <i class="fa-solid fa-circle-play text-sm"></i>
+                    <span>Watch Ad for 3x Coins!</span>
+                </button>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="restartGame()"
+                        class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-wide">
+                        NEXT LEVEL
+                    </button>
+                    <button onclick="goHome()"
+                        class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-3.5 rounded-xl text-xs font-bold border border-slate-700">
+                        GO TO LOBBY
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Message Toast -->
+        <div id="toast-message"
+            class="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-slate-800 px-4 py-2.5 rounded-full shadow-2xl text-xs font-bold text-cyan-400 flex items-center space-x-2 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+            <i class="fa-solid fa-circle-info"></i>
+            <span id="toast-text">Notification</span>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 text-center py-2 border-t border-slate-900 text-[10px] text-slate-600">
+        Stack Color Rush
+    </footer>
+
+    <!-- SDK & Game Logic Scripts -->
+    <script>
+        // ----------------------------------------------------
+        // GLOBAL ERROR TRACKER (Overlay UI Debugger)
+        // ----------------------------------------------------
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            const overlay = document.getElementById('global-error-overlay');
+            const msgEl = document.getElementById('global-error-msg');
+            const stackEl = document.getElementById('global-error-stack');
+            if (overlay && msgEl) {
+                overlay.classList.remove('hidden');
+                msgEl.innerText = `${msg} (at ${url.split('/').pop()}:${lineNo}:${columnNo})`;
+                if (error && error.stack) {
+                    stackEl.innerText = error.stack;
+                } else {
+                    stackEl.innerText = 'No stack trace available';
+                }
+            }
+            return false; // Let standard logging continue
+        };
+        window.onunhandledrejection = function (event) {
+            const overlay = document.getElementById('global-error-overlay');
+            const msgEl = document.getElementById('global-error-msg');
+            const stackEl = document.getElementById('global-error-stack');
+            if (overlay && msgEl) {
+                overlay.classList.remove('hidden');
+                msgEl.innerText = `Unhandled Promise Rejection: ${event.reason}`;
+                if (event.reason && event.reason.stack) {
+                    stackEl.innerText = event.reason.stack;
+                } else {
+                    stackEl.innerText = 'No stack trace available';
+                }
+            }
+        };
+
+        // Detect platform
+        let currentPlatform = 'poki'; // Default template version
+
+        // Detect local execution to immediately bypass native SDK hanging promises
+        const isLocalHost = window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.protocol === 'file:';
+
+        // Detect query parameter for local development testing
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('platform') === 'poki') {
+            currentPlatform = 'poki';
+        } else if (urlParams.get('platform') === 'facebook' || urlParams.get('platform') === 'fb') {
+            currentPlatform = 'facebook';
+        } else {
+            // Auto detect from URL if not specified
+            if (window.location.hostname.includes('poki') || window.location.href.includes('poki')) {
+                currentPlatform = 'poki';
+            }
+        }
+
+        function setupRobustMockSDKs(force = false) {
+            // Force mock if running locally to prevent SDK hanging
+            if (isLocalHost || force || !window.PokiSDK || typeof window.PokiSDK.init !== 'function') {
+                window.PokiSDK = {
+                    init: () => new Promise((resolve) => {
+                        console.log("[PokiSDK Mock] Initialized successfully");
+                        resolve(true);
+                    }),
+                    gameplayStart: () => console.log("[PokiSDK Mock] gameplayStart"),
+                    gameplayStop: () => console.log("[PokiSDK Mock] gameplayStop"),
+                    commercialBreak: () => new Promise((resolve) => {
+                        console.log("[PokiSDK Mock] commercialBreak running");
+                        resolve();
+                    }),
+                    rewardedBreak: () => new Promise((resolve) => {
+                        console.log("[PokiSDK Mock] rewardedBreak running");
+                        resolve(true);
+                    })
+                };
+            }
+
+            if (isLocalHost || force || !window.FBInstant || typeof window.FBInstant.initializeAsync !== 'function') {
+                window.FBInstant = {
+                    initializeAsync: () => new Promise((resolve) => {
+                        console.log("[FBInstant Mock] initializeAsync started");
+                        resolve();
+                    }),
+                    setLoadingProgress: (prog) => console.log(`[FBInstant Mock] loadingProgress: ${prog}%`),
+                    startGameAsync: () => new Promise((resolve) => {
+                        console.log("[FBInstant Mock] startGameAsync completed");
+                        resolve();
+                    }),
+                    player: {
+                        getName: () => "Local Slime Master",
+                        getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME",
+                        getID: () => "12345678"
+                    },
+                    getLeaderboardAsync: (name) => new Promise((resolve) => {
+                        resolve({
+                            getName: () => name,
+                            setScoreAsync: (score) => {
+                                console.log(`[FBInstant Mock] setScoreAsync to: ${score}`);
+                                return Promise.resolve({ getScore: () => score });
+                            },
+                            getEntriesAsync: (limit, offset) => {
+                                return Promise.resolve([
+                                    { getRank: () => 1, getScore: () => 48200, getPlayer: () => ({ getName: () => "Me (Player)", getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME" }) },
+                                    { getRank: () => 2, getScore: () => 38120, getPlayer: () => ({ getName: () => "Sophia Kim", getPhoto: () => "https://placehold.co/150x150/ec4899/ffffff?text=JY" }) },
+                                    { getRank: () => 3, getScore: () => 24950, getPlayer: () => ({ getName: () => "David Park", getPhoto: () => "https://placehold.co/150x150/f59e0b/ffffff?text=JS" }) }
+                                ]);
+                            }
+                        });
+                    }),
+                    shareAsync: (config) => {
+                        console.log("[FBInstant Mock] shareAsync triggered:", config);
+                        return Promise.resolve();
+                    },
+                    context: {
+                        chooseAsync: () => {
+                            console.log("[FBInstant Mock] context.chooseAsync triggered");
+                            return Promise.resolve();
+                        }
+                    }
+                };
+            }
+        }
+
+        // Run mock setup immediately at script parsing time
+        setupRobustMockSDKs();
+
+        // roundRect Polyfill for older mobile browsers
+        if (typeof CanvasRenderingContext2D.prototype.roundRect !== 'function') {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (typeof r === 'number') {
+                    r = { tl: r, tr: r, br: r, bl: r };
+                } else {
+                    r = { tl: 0, tr: 0, br: 0, bl: 0, ...r };
+                }
+                this.beginPath();
+                this.moveTo(x + r.tl, y);
+                this.lineTo(x + w - r.tr, y);
+                this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+                this.lineTo(x + w, y + h - r.br);
+                this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+                this.lineTo(x + r.bl, y + h);
+                this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+                this.lineTo(x, y + r.tl);
+                this.quadraticCurveTo(x, y, x + r.tl, y);
+                this.closePath();
+                return this;
+            };
+        }
+
+        // ----------------------------------------------------
+        // PLATFORM ADVERTISING CONTROLLER
+        // ----------------------------------------------------
+        
+
+        
+        function preloadInterstitial() {}
+        function preloadRewardedVideo() {}
+        
+
+        function showInterstitialAd() {
+            if (currentPlatform === 'facebook') {
+                
+            } else if (currentPlatform === 'poki') {
+                
+                return new Promise((resolve) => {
+                    PokiSDK.commercialBreak()
+                        .then(() => {
+                            console.log("[PokiSDK] Commercial break finished");
+                            resolve();
+                        })
+                        .catch(err => {
+                            console.warn("[PokiSDK] Commercial break error:", err);
+                            resolve();
+                        });
+                });
+                
+            } else {
+                console.log("[Mock Ad] Triggering mock Interstitial Ad");
+                return Promise.resolve();
+            }
+        }
+
+
+        // Initialize Platforms with error safety wrappers
+        function initPlatforms() {
+            setupRobustMockSDKs(); // Ensure stubs are present initially
+
+            if (currentPlatform === 'facebook') {
+                
+            } else if (currentPlatform === 'poki') {
+                
+                const pokiInitPromise = new Promise((resolve) => {
+                    try {
+                        if (isLocalHost) {
+                            setupRobustMockSDKs(true);
+                            resolve();
+                            return;
+                        }
+
+                        if (typeof PokiSDK.init === 'function') {
+                            PokiSDK.init()
+                                .then(() => resolve())
+                                .catch((err) => {
+                                    console.warn("PokiSDK.init promise rejected:", err);
+                                    setupRobustMockSDKs(true);
+                                    resolve();
+                                });
+                        } else {
+                            setupRobustMockSDKs(true);
+                            resolve();
+                        }
+                    } catch (e) {
+                        console.warn("PokiSDK initialization error:", e);
+                        setupRobustMockSDKs(true);
+                        resolve();
+                    }
+                });
+
+                pokiInitPromise.then(() => {
+                    console.log("Poki platform sequence completed successfully.");
+                    try { PokiSDK.gameplayStart(); } catch (e) { }
+                    loadGameSaveData();
+                    adjustUIForPlatform();
+                });
+                
+            } else {
+                loadGameSaveData();
+                adjustUIForPlatform();
+            }
+        }
+
+        function adjustUIForPlatform() {
+            if (currentPlatform !== 'facebook') {
+                // Find and hide Facebook social lobby buttons
+                const lbBtn = document.querySelector("button[onclick=\"openTab('leaderboard')\"]");
+                const challengeBtn = document.querySelector("button[onclick=\"inviteFriends()\"]");
+                const skinsBtn = document.querySelector("button[onclick=\"openTab('skins')\"]");
+                
+                if (lbBtn) lbBtn.style.display = 'none';
+                if (challengeBtn) challengeBtn.style.display = 'none';
+                
+                if (skinsBtn && skinsBtn.parentElement) {
+                    const parent = skinsBtn.parentElement;
+                    parent.className = "flex justify-center w-full px-2";
+                    skinsBtn.className = "bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95 w-1/3";
+                }
+                
+                // Hide result screen Facebook feed share button
+                const shareBtn = document.querySelector("button[onclick=\"shareGameResult()\"]");
+                if (shareBtn) shareBtn.style.display = 'none';
+            }
+        }
+
+        // Run platform initializer on load
+        window.addEventListener('load', () => {
+            initPlatforms();
+        });
+
+        // ----------------------------------------------------
+        // GAME CONFIG & SKIN CONFIG
+        // ----------------------------------------------------
+        const colorPalette = {
+            red: { bg: '#f43f5e', light: '#fda4af', border: '#e11d48', particle: '#ef4444' },
+            green: { bg: '#10b981', light: '#6ee7b7', border: '#059669', particle: '#10b981' },
+            blue: { bg: '#3b82f6', light: '#93c5fd', border: '#2563eb', particle: '#3b82f6' },
+            yellow: { bg: '#eab308', light: '#fde047', border: '#ca8a04', particle: '#eab308' }
+        };
+
+        const skins = {
+            neon: {
+                red: colorPalette.red,
+                green: colorPalette.green,
+                blue: colorPalette.blue,
+                yellow: colorPalette.yellow
+            },
+            wooden: {
+                red: { bg: '#b45309', light: '#f59e0b', border: '#78350f', particle: '#d97706' },
+                green: { bg: '#047857', light: '#10b981', border: '#064e3b', particle: '#059669' },
+                blue: { bg: '#1d4ed8', light: '#3b82f6', border: '#1e3a8a', particle: '#2563eb' },
+                yellow: { bg: '#a16207', light: '#eab308', border: '#713f12', particle: '#d97706' }
+            },
+            retro: {
+                red: { bg: '#e11d48', light: '#ffffff', border: '#881337', particle: '#e11d48' },
+                green: { bg: '#16a34a', light: '#ffffff', border: '#064e3b', particle: '#16a34a' },
+                blue: { bg: '#2563eb', light: '#ffffff', border: '#1e3a8a', particle: '#2563eb' },
+                yellow: { bg: '#ca8a04', light: '#ffffff', border: '#713f12', particle: '#ca8a04' }
+            }
+        };
+
+        let currentSkin = 'neon';
+        let purchasedSkins = ['neon'];
+        let coins = 1200;
+        let highestScore = 0;
+        let currentLevel = 1;
+
+        // Load / Save game logic
+        function loadGameSaveData() {
+            try {
+                const loadedCoins = localStorage.getItem('scr_coins');
+                const loadedSkins = localStorage.getItem('scr_skins');
+                const loadedActiveSkin = localStorage.getItem('scr_active_skin');
+                const loadedLevel = localStorage.getItem('scr_level');
+
+                if (loadedCoins) coins = parseInt(loadedCoins, 10);
+                if (loadedSkins) purchasedSkins = JSON.parse(loadedSkins);
+                if (loadedActiveSkin) currentSkin = loadedActiveSkin;
+                if (loadedLevel) currentLevel = parseInt(loadedLevel, 10);
+            } catch (e) {
+                console.warn("Could not load save data:", e);
+            }
+            document.getElementById('global-coins').innerText = coins;
+            updateSkinSelectionBorder();
+            loadLeaderboard();
+        }
+
+        function saveGameData() {
+            try {
+                localStorage.setItem('scr_coins', coins.toString());
+                localStorage.setItem('scr_skins', JSON.stringify(purchasedSkins));
+                localStorage.setItem('scr_active_skin', currentSkin);
+                localStorage.setItem('scr_level', currentLevel.toString());
+            } catch (e) {
+                console.warn("Could not save data:", e);
+            }
+            document.getElementById('global-coins').innerText = coins;
+        }
+
+        // ----------------------------------------------------
+        // AUDIO ENGINE
+        // ----------------------------------------------------
+        let audioCtx = null;
+        function playSound(type) {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'collect') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'hit_bad') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'gate_break') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'fever_active') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(900, now + 0.4);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'level_clear') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523, now); // C5
+                    osc.frequency.setValueAtTime(659, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783, now + 0.2); // G5
+                    osc.frequency.setValueAtTime(1046, now + 0.3); // C6
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
+            } catch (e) {
+                console.warn("Audio error:", e);
+            }
+        }
+
+        // ----------------------------------------------------
+        // CORE GAME ENGINE (CANVAS 2D 60FPS)
+        // ----------------------------------------------------
+        let canvas = null, ctx = null;
+        let gameActive = false;
+        let isGameOverState = false;
+        let isFinaleState = false;
+        let levelDistance = 0;
+        const maxLevelDistance = 4000; // Total run length before finale
+
+        // Player State
+        const player = {
+            lane: 1, // 0: Left, 1: Center, 2: Right
+            visualX: 0, // Interpolated X coordinate
+            color: 'red',
+            stack: [], // Array of block colors
+            score: 0,
+            baseSpeed: 10,
+            speed: 10,
+            feverGauge: 0,
+            isFever: false,
+            feverTimeRemaining: 0,
+            invincible: false
+        };
+
+        // Game lists
+        let objects = [];
+        let particles = [];
+        let stackPhysics = []; // Tracks block trailing physics
+        let finaleWalls = [];  // Multipliers at the end
+
+        let roadScroll = 0;
+        let lastObjectZ = 0;
+
+        // Controls
+        let isDragging = false;
+        let startTouchX = 0;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            canvas = document.getElementById('canvas-game');
+            ctx = canvas.getContext('2d');
+
+            // Handle canvas sizing
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Set up input bindings
+            setupInputs();
+        });
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth * window.devicePixelRatio;
+            canvas.height = container.clientHeight * window.devicePixelRatio;
+        }
+
+        // Inputs Setup
+        function setupInputs() {
+            // Mouse & Touch events
+            canvas.addEventListener('mousedown', (e) => {
+                if (!gameActive) return;
+                isDragging = true;
+                const rect = canvas.getBoundingClientRect();
+                startTouchX = (e.clientX - rect.left) / rect.width;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDragging || !gameActive) return;
+                const rect = canvas.getBoundingClientRect();
+                const currentX = (e.clientX - rect.left) / rect.width;
+                handleSwipeMove(currentX);
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            canvas.addEventListener('touchstart', (e) => {
+                if (!gameActive) return;
+                isDragging = true;
+                const rect = canvas.getBoundingClientRect();
+                startTouchX = (e.touches[0].clientX - rect.left) / rect.width;
+            }, { passive: true });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDragging || !gameActive) return;
+                const rect = canvas.getBoundingClientRect();
+                const currentX = (e.touches[0].clientX - rect.left) / rect.width;
+                handleSwipeMove(currentX);
+            }, { passive: true });
+
+            canvas.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+
+            // Keyboard controls (A/D, Arrow keys)
+            window.addEventListener('keydown', (e) => {
+                if (!gameActive) return;
+                if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                    if (player.lane > 0) player.lane--;
+                } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+                    if (player.lane < 2) player.lane++;
+                }
+            });
+        }
+
+        function handleSwipeMove(relativeX) {
+            // Quantize screen width into 3 lanes
+            if (relativeX < 0.35) {
+                player.lane = 0;
+            } else if (relativeX > 0.65) {
+                player.lane = 2;
+            } else {
+                player.lane = 1;
+            }
+
+            // Visual fade out for drag tutorial
+            const tut = document.getElementById('drag-tutorial');
+            if (tut) tut.style.opacity = '0';
+        }
+
+        // ----------------------------------------------------
+        // RUNNER GAME LOOP
+        // ----------------------------------------------------
+        function startGame(startWithFever = false) {
+            PokiSDK.gameplayStart();
+
+            document.getElementById('screen-home').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            document.getElementById('popup-result').classList.add('hidden');
+
+            // Force resize canvas to capture active display width/height
+            resizeCanvas();
+
+            // Reset Game variables
+            gameActive = true;
+            isGameOverState = false;
+            isFinaleState = false;
+            levelDistance = 0;
+            roadScroll = 0;
+            lastObjectZ = 0;
+
+            objects = [];
+            particles = [];
+            stackPhysics = [];
+            finaleWalls = [];
+
+            // Reset Player
+            player.score = 0;
+            player.lane = 1;
+            player.visualX = 1; // Start in center lane
+            player.stack = ['red', 'red', 'red']; // Initial default stack
+            player.color = 'red';
+            player.speed = player.baseSpeed;
+            player.feverGauge = startWithFever ? 100 : 0;
+            player.isFever = false;
+            player.feverTimeRemaining = 0;
+
+            document.getElementById('level-display').innerText = `Level ${currentLevel}`;
+            document.getElementById('game-score').innerText = '0';
+            updateFeverGaugeUI();
+            updateColorIndicator();
+
+            if (startWithFever) {
+                activateFeverMode();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            updateGameLogic();
+            drawGameScene();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateGameLogic() {
+            // 1. Speeds and distances
+            if (player.isFever) {
+                player.speed = player.baseSpeed * 2.2;
+                player.feverTimeRemaining -= 1 / 60;
+                if (player.feverTimeRemaining <= 0) {
+                    player.isFever = false;
+                    player.speed = player.baseSpeed;
+                    player.feverGauge = 0;
+                    updateFeverGaugeUI();
+                }
+            } else {
+                player.speed = player.baseSpeed;
+            }
+
+            // Move game progress
+            if (!isFinaleState) {
+                levelDistance += player.speed;
+                roadScroll += player.speed;
+
+                // Update Progress bar
+                const percent = Math.min((levelDistance / maxLevelDistance) * 100, 100);
+                document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+
+                if (levelDistance >= maxLevelDistance) {
+                    enterFinaleState();
+                }
+            } else {
+                // Finale scrolling
+                roadScroll += player.speed;
+                updateFinalePhysics();
+            }
+
+            // 2. Interpolate Player X coordinate towards target lane
+            const targetX = player.lane; // 0, 1, 2
+            player.visualX += (targetX - player.visualX) * 0.18; // smooth slide LERP
+
+            // 3. Update tail stacks physics
+            updateStackPhysics();
+
+            // 4. Generate obstacles & blocks (Runner mode)
+            if (!isFinaleState) {
+                spawnSpawns();
+            }
+
+            // 5. Update spawned entities
+            for (let i = objects.length - 1; i >= 0; i--) {
+                let obj = objects[i];
+                // objects move closer to player (decrease z)
+                obj.z -= (player.speed / 1000);
+
+                // Check collision at player front plane
+                if (obj.z <= 0.04) {
+                    if (obj.z > -0.05) { // Active collision window
+                        checkCollision(obj);
+                    }
+                    if (obj.z < -0.1) {
+                        objects.splice(i, 1);
+                    }
+                }
+            }
+
+            // 6. Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.size *= 0.95;
+                p.life -= 1;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateStackPhysics() {
+            const count = player.stack.length;
+            if (stackPhysics.length !== count) {
+                while (stackPhysics.length < count) {
+                    stackPhysics.push({ x: player.visualX, y: 0 });
+                }
+                if (stackPhysics.length > count) {
+                    stackPhysics.length = count;
+                }
+            }
+
+            let prevX = player.visualX;
+            const h = canvas.height;
+            for (let i = 0; i < count; i++) {
+                // Back trailing delay physics
+                let targetX = prevX;
+                stackPhysics[i].x += (targetX - stackPhysics[i].x) * 0.28;
+                // Stack Y builds upwards from bottom player position
+                stackPhysics[i].y = h - 110 - (i * 12);
+                prevX = stackPhysics[i].x;
+            }
+        }
+
+        // Spawn rhythmically
+        function spawnSpawns() {
+            lastObjectZ -= (player.speed / 1000);
+            if (lastObjectZ <= 0) {
+                // Spawn a new row of items
+                const roll = Math.random();
+                if (roll < 0.22) {
+                    // Spawn Color Gate
+                    // Gates span all 3 lanes, each lane different color
+                    const colors = ['red', 'green', 'blue', 'yellow'].sort(() => Math.random() - 0.5);
+                    objects.push({
+                        type: 'gate',
+                        z: 1.0,
+                        colors: [colors[0], colors[1], colors[2]] // colors for lane 0, 1, 2
+                    });
+                    lastObjectZ = 0.5; // Space out next spawn
+                } else {
+                    // Spawn raw collectible blocks
+                    // 1, 2, or 3 lanes populated
+                    const numBlocks = Math.random() > 0.6 ? 2 : 1;
+                    const lanes = [0, 1, 2].sort(() => Math.random() - 0.5);
+                    const spawnColor = Math.random() > 0.4 ? player.color : ['red', 'green', 'blue', 'yellow'][Math.floor(Math.random() * 4)];
+
+                    for (let i = 0; i < numBlocks; i++) {
+                        objects.push({
+                            type: 'block',
+                            lane: lanes[i],
+                            color: spawnColor,
+                            z: 1.0
+                        });
+                    }
+                    lastObjectZ = 0.25;
+                }
+            }
+        }
+
+        // Collisions Engine
+        function checkCollision(obj) {
+            if (obj.hit) return; // Prevent double trigger
+
+            if (obj.type === 'block') {
+                if (obj.lane === player.lane) {
+                    obj.hit = true;
+                    handleBlockCollection(obj.color);
+                    createExplosion(obj.lane, obj.color, 12);
+                }
+            } else if (obj.type === 'gate') {
+                obj.hit = true;
+                const gateColor = obj.colors[player.lane];
+                handleGatePassage(gateColor);
+            }
+        }
+
+        function handleBlockCollection(color) {
+            if (player.isFever) {
+                // Fever collects anything and converts it to gold + bonus points
+                playSound('collect');
+                player.score += 50;
+                document.getElementById('game-score').innerText = player.score;
+                player.stack.push(player.color); // Expand stack size dynamically
+                return;
+            }
+
+            if (color === player.color) {
+                // Good match
+                playSound('collect');
+                player.stack.push(color);
+                player.score += 10;
+                document.getElementById('game-score').innerText = player.score;
+
+                // Fever Gauge logic
+                player.feverGauge = Math.min(player.feverGauge + 5, 100);
+                updateFeverGaugeUI();
+                if (player.feverGauge >= 100) {
+                    activateFeverMode();
+                }
+            } else {
+                // Bad match color: lose stack
+                playSound('hit_bad');
+                if (player.stack.length > 0) {
+                    player.stack.pop(); // Lose top block
+                } else {
+                    // Critical failure: Die
+                    triggerGameOver();
+                }
+                player.feverGauge = Math.max(player.feverGauge - 10, 0);
+                updateFeverGaugeUI();
+            }
+        }
+
+        function handleGatePassage(color) {
+            playSound('gate_break');
+
+            if (player.isFever) {
+                // Fever blasts gates
+                player.score += 100;
+                document.getElementById('game-score').innerText = player.score;
+                return;
+            }
+
+            // Gate match rules:
+            // Must have stack matching or player color
+            if (player.color === color) {
+                // Safe break: Lose some stacks as gate energy cost
+                const cost = 3;
+                for (let i = 0; i < cost; i++) {
+                    if (player.stack.length > 0) player.stack.pop();
+                }
+                player.score += 30;
+                document.getElementById('game-score').innerText = player.score;
+            } else {
+                // Bad gate match: Change colors but drain stacks heavily
+                player.color = color;
+                updateColorIndicator();
+
+                const drain = Math.floor(player.stack.length / 2) + 2;
+                for (let i = 0; i < drain; i++) {
+                    if (player.stack.length > 0) player.stack.pop();
+                }
+                showToast(`Color changed to ${color.toUpperCase()}! Stacks lost!`);
+            }
+        }
+
+        function activateFeverMode() {
+            playSound('fever_active');
+            player.isFever = true;
+            player.feverTimeRemaining = 6; // 6 seconds fever
+            showToast("🔥 FEVER MODE ACTIVATED! 🔥");
+        }
+
+        function updateFeverGaugeUI() {
+            document.getElementById('fever-text').innerText = `${player.feverGauge}%`;
+            document.getElementById('fever-bar-fill').style.width = `${player.feverGauge}%`;
+
+            if (player.feverGauge >= 100) {
+                document.getElementById('fever-bar-fill').classList.add('neon-glow-rainbow');
+            } else {
+                document.getElementById('fever-bar-fill').classList.remove('neon-glow-rainbow');
+            }
+        }
+
+        function updateColorIndicator() {
+            const dot = document.getElementById('color-indicator-dot');
+            const theme = skins[currentSkin][player.color];
+            if (dot && theme) {
+                dot.style.backgroundColor = theme.bg;
+                dot.style.boxShadow = `0 0 15px ${theme.border}`;
+            }
+        }
+
+        // ----------------------------------------------------
+        // FINALE SECTION (BONUS SCORING ZONE)
+        // ----------------------------------------------------
+        function enterFinaleState() {
+            isFinaleState = true;
+            objects = []; // Clear current objects
+            player.isFever = false; // Disable fever for final calculations
+            player.speed = player.baseSpeed * 1.5; // Fast push!
+
+            // Build series of bonus score multiplier walls
+            // 10 walls from x1.0 up to x10.0
+            const multipliers = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0];
+            finaleWalls = multipliers.map((mult, index) => {
+                return {
+                    mult: mult,
+                    z: 0.5 + index * 0.25, // Sequenced in depth
+                    broken: false
+                };
+            });
+            showToast("🏁 Entering Finale Bonus Zone! 🏁");
+        }
+
+        function updateFinalePhysics() {
+            let activeWalls = false;
+
+            finaleWalls.forEach(wall => {
+                wall.z -= (player.speed / 1000);
+                if (wall.z > -0.2) activeWalls = true;
+
+                // Collision with wall
+                if (wall.z <= 0.05 && !wall.broken) {
+                    wall.broken = true;
+                    // Check if player has stacks to break through
+                    const breakCost = 4;
+                    if (player.stack.length >= breakCost) {
+                        // Success: Break through
+                        for (let i = 0; i < breakCost; i++) player.stack.pop();
+                        player.score += Math.floor(100 * wall.mult);
+                        document.getElementById('game-score').innerText = player.score;
+                        playSound('gate_break');
+                        createExplosion(1, player.color, 20); // Center explosion
+                    } else {
+                        // Out of stacks: Stop and clear level!
+                        player.speed = 0;
+                        triggerLevelClear(wall.mult);
+                    }
+                }
+            });
+
+            // Ultimate finale reach
+            if (!activeWalls && player.speed > 0) {
+                player.speed = 0;
+                triggerLevelClear(10.0);
+            }
+        }
+
+        // Particles builder
+        function createExplosion(lane, color, count) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const px = (w / 3) * lane + (w / 6);
+            const py = h - 100;
+            const theme = skins[currentSkin][color] || colorPalette.red;
+
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: px,
+                    y: py,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.8) * 12,
+                    size: Math.random() * 8 + 4,
+                    color: theme.particle,
+                    life: Math.random() * 20 + 20
+                });
+            }
+        }
+
+        // ----------------------------------------------------
+        // RENDER 2.5D GRID RUNWAY
+        // ----------------------------------------------------
+        function drawGameScene() {
+            const w = canvas.width;
+            const h = canvas.height;
+            if (w <= 0 || h <= 0) {
+                resizeCanvas();
+                if (canvas.width <= 0 || canvas.height <= 0) return;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const vanishingY = canvas.height * 0.22;
+            const topW = w * 0.2;
+            const botW = w * 0.95;
+            const topX = (w - topW) / 2;
+            const botX = (w - botW) / 2;
+
+            // 1. Draw Ground Sky
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, vanishingY);
+            skyGrad.addColorStop(0, '#020617'); // slate-950
+            skyGrad.addColorStop(1, '#0b0f19'); // dark grey
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, vanishingY);
+
+            // 2. Draw Runway active road
+            let roadGrad = ctx.createLinearGradient(0, vanishingY, 0, h);
+            roadGrad.addColorStop(0, '#0f172a'); // slate-900
+            roadGrad.addColorStop(1, '#1e1b4b'); // indigo-950
+            ctx.fillStyle = roadGrad;
+            ctx.beginPath();
+            ctx.moveTo(topX, vanishingY);
+            ctx.lineTo(topX + topW, vanishingY);
+            ctx.lineTo(botX + botW, h);
+            ctx.lineTo(botX, h);
+            ctx.closePath();
+            ctx.fill();
+
+            // Lanes lines
+            ctx.strokeStyle = 'rgba(99, 102, 241, 0.25)';
+            ctx.lineWidth = 2;
+            for (let i = 1; i <= 2; i++) {
+                let ratio = i / 3;
+                let tx = topX + topW * ratio;
+                let bx = botX + botW * ratio;
+                ctx.beginPath();
+                ctx.moveTo(tx, vanishingY);
+                ctx.lineTo(bx, h);
+                ctx.stroke();
+            }
+
+            // Speed lines scrolling
+            const speed = 4;
+            const totalLines = 12;
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.1)';
+            for (let i = 0; i < totalLines; i++) {
+                let t = ((roadScroll * speed + i * (maxLevelDistance / totalLines)) % maxLevelDistance) / maxLevelDistance;
+                let y = vanishingY + (h - vanishingY) * Math.pow(t, 2.5); // non-linear scaling
+                let ratio = (y - vanishingY) / (h - vanishingY);
+                let currentW = topW + (botW - topW) * ratio;
+                let cx = (w - currentW) / 2;
+
+                ctx.beginPath();
+                ctx.moveTo(cx, y);
+                ctx.lineTo(cx + currentW, y);
+                ctx.stroke();
+            }
+
+            // 3. Draw Finale Walls if active
+            if (isFinaleState) {
+                finaleWalls.forEach(wall => {
+                    if (wall.z > 0 && wall.z <= 1.0) {
+                        drawFinaleWall(wall);
+                    }
+                });
+            }
+
+            // 4. Draw Spawns (Blocks & Gates)
+            // Draw back-to-front sorting (Painter's algorithm)
+            const sortedObjects = [...objects].sort((a, b) => b.z - a.z);
+            sortedObjects.forEach(obj => {
+                if (obj.type === 'block') {
+                    drawBlock(obj);
+                } else if (obj.type === 'gate') {
+                    drawGate(obj);
+                }
+            });
+
+            // 5. Draw Tail Block Stack (Trailing Physics)
+            const theme = skins[currentSkin];
+            player.stack.forEach((blockColor, index) => {
+                const blockTheme = theme[blockColor] || colorPalette.red;
+                const physics = stackPhysics[index];
+                if (physics) {
+                    drawPlayerStackBlock(physics.x, physics.y, index, blockTheme);
+                }
+            });
+
+            // 6. Draw Player main slime blob
+            drawPlayerSlime();
+
+            // 7. Draw Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Draw individual stack block
+        function drawPlayerStackBlock(visualX, y, index, theme) {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Calc X coordinate
+            const topW = w * 0.2;
+            const botW = w * 0.95;
+            const denom = h - (h * 0.22);
+            const ratio = denom <= 0 ? 0 : (y - (h * 0.22)) / denom;
+            const currentW = topW + (botW - topW) * ratio;
+            const roadX = (w - currentW) / 2;
+            const px = roadX + currentW * (visualX / 3 + 1 / 6);
+
+            // Block size scaling
+            const blockW = 60 * ratio;
+            const blockH = 28 * ratio;
+
+            ctx.fillStyle = theme.bg;
+            ctx.strokeStyle = theme.border;
+            ctx.lineWidth = 2;
+
+            // Rounded rect
+            ctx.beginPath();
+            ctx.roundRect(px - blockW / 2, y - blockH / 2, blockW, blockH, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            // Shading highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(px - blockW / 2 + 2, y - blockH / 2 + 2, blockW - 4, blockH / 3);
+        }
+
+        // Draw main character slime
+        function drawPlayerSlime() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const py = h - 90;
+
+            const topW = w * 0.2;
+            const botW = w * 0.95;
+            const currentW = topW + (botW - topW) * 0.88; // hardcoded bottom area ratio
+            const roadX = (w - currentW) / 2;
+            const px = roadX + currentW * (player.visualX / 3 + 1 / 6);
+
+            // Dynamic color
+            const slimeTheme = skins[currentSkin][player.color] || colorPalette.red;
+
+            ctx.save();
+            // Pulse & fever scales
+            let pulseScale = 1.0 + Math.sin(Date.now() / 150) * 0.04;
+            if (player.isFever) pulseScale *= 1.15;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.beginPath();
+            ctx.ellipse(px, py + 15, 30 * pulseScale, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Main Slime body blob
+            ctx.fillStyle = slimeTheme.bg;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = player.isFever ? 4 : 2.5;
+
+            if (player.isFever) {
+                // Rainbow glowing border
+                const hue = (Date.now() / 10) % 360;
+                ctx.strokeStyle = `hsl(${hue}, 100%, 60%)`;
+                ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                ctx.shadowBlur = 15;
+            } else {
+                ctx.shadowColor = slimeTheme.border;
+                ctx.shadowBlur = 8;
+            }
+
+            ctx.beginPath();
+            // Slime shape: rounded teardrop bulb
+            ctx.moveTo(px - 32 * pulseScale, py + 12);
+            ctx.bezierCurveTo(px - 32 * pulseScale, py - 20, px + 32 * pulseScale, py - 20, px + 32 * pulseScale, py + 12);
+            ctx.bezierCurveTo(px + 30 * pulseScale, py + 22, px - 30 * pulseScale, py + 22, px - 32 * pulseScale, py + 12);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Eyes
+            ctx.shadowBlur = 0; // reset shadow
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(px - 10, py - 2, 7, 0, Math.PI * 2);
+            ctx.arc(px + 10, py - 2, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            // follow direction movement representation
+            let lookOffset = (player.lane - player.visualX) * 4;
+            ctx.arc(px - 10 + lookOffset, py - 2, 3.5, 0, Math.PI * 2);
+            ctx.arc(px + 10 + lookOffset, py - 2, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cheek blush
+            ctx.fillStyle = slimeTheme.light;
+            ctx.beginPath();
+            ctx.arc(px - 16, py + 4, 3, 0, Math.PI * 2);
+            ctx.arc(px + 16, py + 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw raw collectible block
+        function drawBlock(obj) {
+            if (obj.z <= 0) return;
+            const w = canvas.width;
+            const h = canvas.height;
+            const vanishingY = h * 0.22;
+
+            // Projection mapping
+            const topW = w * 0.2;
+            const botW = w * 0.95;
+
+            // Map non-linear Z to screen Y coordinates
+            const y = vanishingY + (h - vanishingY) * Math.pow(1.0 - obj.z, 2.2);
+            const denom = h - vanishingY;
+            const ratio = denom <= 0 ? 0 : (y - vanishingY) / denom;
+            const currentW = topW + (botW - topW) * ratio;
+            const roadX = (w - currentW) / 2;
+            const x = roadX + currentW * (obj.lane / 3 + 1 / 6);
+
+            const blockW = 50 * ratio;
+            const blockH = 22 * ratio;
+
+            const blockTheme = skins[currentSkin][obj.color] || colorPalette.red;
+
+            ctx.fillStyle = blockTheme.bg;
+            ctx.strokeStyle = blockTheme.border;
+            ctx.lineWidth = 1.5;
+
+            // Draw Block
+            ctx.beginPath();
+            ctx.roundRect(x - blockW / 2, y - blockH / 2, blockW, blockH, 5 * ratio);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner light shine
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.fillRect(x - blockW / 2 + 1, y - blockH / 2 + 1, blockW - 2, blockH / 3.5);
+        }
+
+        // Draw color-changing full gate
+        function drawGate(obj) {
+            if (obj.z <= 0) return;
+            const w = canvas.width;
+            const h = canvas.height;
+            const vanishingY = h * 0.22;
+
+            const topW = w * 0.2;
+            const botW = w * 0.95;
+            const y = vanishingY + (h - vanishingY) * Math.pow(1.0 - obj.z, 2.2);
+            const denom = h - vanishingY;
+            const ratio = denom <= 0 ? 0 : (y - vanishingY) / denom;
+            const currentW = topW + (botW - topW) * ratio;
+            const roadX = (w - currentW) / 2;
+
+            // Draw Gate spanning across the 3 lanes
+            const gateH = 90 * ratio;
+
+            // 3 segments
+            for (let lane = 0; lane < 3; lane++) {
+                const segX = roadX + currentW * (lane / 3);
+                const segW = currentW / 3;
+
+                const col = obj.colors[lane];
+                const theme = skins[currentSkin][col] || colorPalette.red;
+
+                // Segments fill (semitransparent laser barrier)
+                ctx.fillStyle = `${theme.bg}55`;
+                ctx.fillRect(segX, y - gateH, segW, gateH);
+
+                // Top crossbar light
+                ctx.strokeStyle = theme.bg;
+                ctx.lineWidth = 3 * ratio + 0.5;
+                ctx.beginPath();
+                ctx.moveTo(segX, y - gateH);
+                ctx.lineTo(segX + segW, y - gateH);
+                ctx.stroke();
+            }
+
+            // Outer Frame columns
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 4 * ratio + 1;
+            ctx.beginPath();
+            ctx.moveTo(roadX, y);
+            ctx.lineTo(roadX, y - gateH);
+            ctx.lineTo(roadX + currentW, y - gateH);
+            ctx.lineTo(roadX + currentW, y);
+            ctx.stroke();
+        }
+
+        // Draw bonus multiplier wall
+        function drawFinaleWall(wall) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const vanishingY = h * 0.22;
+
+            const topW = w * 0.2;
+            const botW = w * 0.95;
+            const y = vanishingY + (h - vanishingY) * Math.pow(1.0 - wall.z, 2.2);
+            const denom = h - vanishingY;
+            const ratio = denom <= 0 ? 0 : (y - vanishingY) / denom;
+            const currentW = topW + (botW - topW) * ratio;
+            const roadX = (w - currentW) / 2;
+
+            const wallH = 100 * ratio;
+
+            if (wall.broken) {
+                // Fragmented debris simulation
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(roadX - 10, y - wallH, currentW + 20, wallH);
+                return;
+            }
+
+            // Draw Wall block
+            let wallGrad = ctx.createLinearGradient(roadX, y - wallH, roadX, y);
+            wallGrad.addColorStop(0, '#be123c'); // rose-700
+            wallGrad.addColorStop(1, '#e11d48'); // rose-600
+            ctx.fillStyle = wallGrad;
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 3 * ratio;
+
+            ctx.beginPath();
+            ctx.roundRect(roadX, y - wallH, currentW, wallH, 8 * ratio);
+            ctx.fill();
+            ctx.stroke();
+
+            // Label multiplier
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `black ${Math.floor(40 * ratio)}px 'Outfit', sans-serif`;
+            ctx.fillText(`${wall.mult.toFixed(1)}x`, roadX + currentW / 2, y - wallH / 2);
+        }
+
+        // ----------------------------------------------------
+        // SYSTEM GAME OVER / CLEAR STATES
+        // ----------------------------------------------------
+        function triggerGameOver() {
+            gameActive = false;
+            PokiSDK.gameplayStop();
+
+            // Show Confirm Dialog for Revive
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+
+        // Action bindings inside Confirm modal
+        document.getElementById('confirm-yes-btn').addEventListener('click', () => {
+            document.getElementById('modal-confirm').classList.add('hidden');
+            watchRewardedAd('revive');
+        });
+
+        document.getElementById('confirm-no-btn').addEventListener('click', () => {
+            document.getElementById('modal-confirm').classList.add('hidden');
+            showResultDashboard(false, 1.0);
+        });
+
+        function triggerLevelClear(finalMult) {
+            gameActive = false;
+            PokiSDK.gameplayStop();
+            playSound('level_clear');
+
+            if (currentPlatform === 'facebook') {
+                
+            }
+
+            showResultDashboard(true, finalMult);
+        }
+
+        function showResultDashboard(cleared, multiplier) {
+            // Stats calculation
+            const rawReward = Math.floor(player.score * 0.15 * multiplier);
+            coins += rawReward;
+            saveGameData();
+
+            // Format DOM Results
+            const badge = document.getElementById('result-badge-container');
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+
+            if (cleared) {
+                badge.className = "inline-flex p-1 rounded-full bg-gradient-to-r from-yellow-400 to-amber-600 mx-auto shadow-lg shadow-yellow-500/20 animate-pulse";
+                badge.innerHTML = '<div class="bg-slate-950 p-4 rounded-full"><i class="fa-solid fa-trophy text-3xl text-yellow-400"></i></div>';
+                title.className = "text-3xl font-black italic uppercase tracking-wider text-yellow-400";
+                title.innerText = "STAGE CLEAR";
+                desc.innerText = `Congratulations! Conquered the ${multiplier.toFixed(1)}x bonus wall!`;
+
+                // Allow Next level increments
+                currentLevel++;
+                saveGameData();
+            } else {
+                badge.className = "inline-flex p-1 rounded-full bg-gradient-to-r from-slate-600 to-slate-800 mx-auto shadow-lg";
+                badge.innerHTML = '<div class="bg-slate-950 p-4 rounded-full"><i class="fa-solid fa-heart-crack text-3xl text-slate-500"></i></div>';
+                title.className = "text-3xl font-black italic uppercase tracking-wider text-slate-500";
+                title.innerText = "GAME OVER";
+                desc.innerText = "Game Over! Upgrade skins and try again.";
+            }
+
+            document.getElementById('result-score').innerText = player.score;
+            document.getElementById('result-multiplier').innerText = `${multiplier.toFixed(1)}x`;
+            document.getElementById('result-reward-amount').innerText = rawReward;
+
+            // Reset Rewarded Ad double multiplier button visibility
+            document.getElementById('btn-gold-boost').disabled = false;
+            document.getElementById('btn-gold-boost').style.opacity = '1';
+
+            // Show results view
+            document.getElementById('popup-result').classList.remove('hidden');
+
+            // Show Facebook Interstitial Ad (every 3 levels layout rule)
+            if (currentLevel % 3 === 0) {
+                setTimeout(() => {
+                    showInterstitialAd();
+                }, 800);
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('popup-result').classList.add('hidden');
+            startGame(false);
+        }
+
+        // ----------------------------------------------------
+        // REWARDED AD VIDEO CONTROLLER
+        // ----------------------------------------------------
+        let adRewardType = 'coins'; // 'coins', 'revive', 'boost'
+        let adTimer = 5;
+        let adTimerInterval = null;
+        let adAudioMuted = false;
+
+        function runMockAdVideo() {
+            // Local simulation video player
+            document.getElementById('popup-ad').classList.remove('hidden');
+
+            adTimer = 5;
+            document.getElementById('ad-timer-countdown').innerText = adTimer;
+            document.getElementById('ad-close-btn').disabled = true;
+            document.getElementById('ad-close-btn').className = "text-slate-500 cursor-not-allowed opacity-50 text-sm font-bold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800";
+            document.getElementById('ad-progress-bar').style.width = '0%';
+
+            let elapsed = 0;
+            if (adTimerInterval) clearInterval(adTimerInterval);
+
+            adTimerInterval = setInterval(() => {
+                elapsed += 0.1;
+                const percent = Math.min((elapsed / 5) * 100, 100);
+                document.getElementById('ad-progress-bar').style.width = `${percent}%`;
+
+                if (elapsed >= 5) {
+                    clearInterval(adTimerInterval);
+                    const closeBtn = document.getElementById('ad-close-btn');
+                    closeBtn.disabled = false;
+                    closeBtn.className = "text-cyan-400 text-sm font-bold bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700 animate-pulse cursor-pointer";
+                    document.getElementById('ad-timer-countdown').innerText = "✓";
+                } else {
+                    document.getElementById('ad-timer-countdown').innerText = Math.ceil(5 - elapsed);
+                }
+            }, 100);
+        }
+
+        function watchRewardedAd(type) {
+            adRewardType = type;
+
+            if (currentPlatform === 'facebook') {
+                
+            } else if (currentPlatform === 'poki') {
+                
+                if (isLocalHost) {
+                    // Local simulation mock resolved promise
+                    claimAdReward();
+                } else {
+                    showToast("Loading ad...");
+                    PokiSDK.rewardedBreak()
+                        .then((withReward) => {
+                            if (withReward) {
+                                claimAdReward();
+                            } else {
+                                showToast("Ad break closed without reward.");
+                            }
+                        })
+                        .catch(err => {
+                            console.warn("[PokiSDK] Rewarded break error:", err);
+                            showToast("Ad playback failed.");
+                        });
+                }
+                
+            } else {
+                runMockAdVideo();
+            }
+        }
+
+        function claimAdReward() {
+            document.getElementById('popup-ad').classList.add('hidden');
+
+            if (adRewardType === 'coins') {
+                coins += 500;
+                saveGameData();
+                showToast("🎁 Ad Reward: +500 Coins added!");
+            } else if (adRewardType === 'revive') {
+                // Revive: Clear player screen area, return player to state
+                player.stack = ['red', 'red', 'red', 'red', 'red'];
+                player.feverGauge = 50; // Boost starting gauge
+                updateFeverGaugeUI();
+                gameActive = true;
+                requestAnimationFrame(gameLoop);
+                showToast("⚡ Revived! Back to the run!");
+            } else if (adRewardType === 'boost') {
+                // 3x coins multiplier
+                const multAmount = parseInt(document.getElementById('result-reward-amount').innerText, 10);
+                coins += (multAmount * 2); // Add another 2x
+                saveGameData();
+
+                // Disable button
+                const boostBtn = document.getElementById('btn-gold-boost');
+                boostBtn.disabled = true;
+                boostBtn.style.opacity = '0.5';
+
+                showToast("🔥 3x Coins Claimed!");
+            }
+        }
+
+        function toggleAdAudio() {
+            adAudioMuted = !adAudioMuted;
+            const icon = document.getElementById('ad-audio-icon');
+            if (adAudioMuted) {
+                icon.className = "fa-solid fa-volume-xmark";
+            } else {
+                icon.className = "fa-solid fa-volume-high";
+            }
+        }
+
+        // ----------------------------------------------------
+        // LOBBY UI & NAVIGATION FUNCTIONS
+        // ----------------------------------------------------
+        function goHome() {
+            document.getElementById('screen-home').classList.remove('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('popup-result').classList.add('hidden');
+            document.getElementById('global-coins').innerText = coins;
+        }
+
+        function openTab(tabId) {
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            if (tabId === 'leaderboard') {
+                loadLeaderboard();
+            }
+        }
+
+        function closeTab(tabId) {
+            document.getElementById(`tab-${tabId}`).classList.add('hidden');
+        }
+
+        function inviteFriends() {
+            if (currentPlatform === 'facebook') {
+                
+            } else {
+                showToast("Challenge sent to your friends!");
+            }
+        }
+
+        function shareGameResult() {
+            if (currentPlatform === 'facebook') {
+                
+            } else {
+                showToast("Successfully shared score!");
+            }
+        }
+
+        function exitGame() {
+            if (currentPlatform === 'facebook') {
+                
+            } else {
+                
+                showToast("Thanks for playing!");
+                
+            }
+        }
+
+        // Dynamic skins handler
+        function selectSkin(skinId) {
+            if (purchasedSkins.includes(skinId)) {
+                currentSkin = skinId;
+                saveGameData();
+                updateSkinSelectionBorder();
+                showToast(`[${skinId.toUpperCase()}] Skin equipped!`);
+            } else {
+                const prices = { wooden: 500, retro: 1000 };
+                const cost = prices[skinId] || 500;
+
+                if (coins >= cost) {
+                    coins -= cost;
+                    purchasedSkins.push(skinId);
+                    currentSkin = skinId;
+                    saveGameData();
+
+                    // Update UI Cost Label
+                    document.getElementById(`skin-cost-${skinId}`).innerHTML = '<span class="text-cyan-400 font-semibold">Owned</span>';
+
+                    updateSkinSelectionBorder();
+                    showToast(`🎉 [${skinId.toUpperCase()}] Skin unlocked!`);
+                } else {
+                    showToast("Not enough coins! Watch ads or play games to earn coins.");
+                }
+            }
+        }
+
+        function updateSkinSelectionBorder() {
+            ['neon', 'wooden', 'retro'].forEach(s => {
+                const item = document.getElementById(`skin-item-${s}`);
+                if (!item) return;
+
+                if (s === currentSkin) {
+                    item.classList.add('border-cyan-500');
+                    item.classList.remove('border-slate-800');
+                } else {
+                    item.classList.remove('border-cyan-500');
+                    item.classList.add('border-slate-800');
+                }
+
+                // Update owned text
+                if (purchasedSkins.includes(s) && s !== 'neon') {
+                    const costLabel = document.getElementById(`skin-cost-${s}`);
+                    if (costLabel) costLabel.innerHTML = '<span class="text-cyan-400 font-semibold">Owned</span>';
+                }
+            });
+        }
+
+        // Leaderboard Facebook mock fetcher
+        function loadLeaderboard() {
+            const listContainer = document.getElementById('leaderboard-list');
+            listContainer.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs"><i class="fa-solid fa-spinner animate-spin mr-2"></i>Loading Leaderboard...</div>';
+
+            if (currentPlatform === 'facebook') {
+                
+            } else {
+                // Poki/Mock: Local simulated leaderboard
+                listContainer.innerHTML = '';
+                const mockEntries = [
+                    { rank: 1, name: "Slime King", score: 55000 },
+                    { rank: 2, name: "Runner Pro", score: 42100 },
+                    { rank: 3, name: "Stack Master", score: 31000 }
+                ];
+                mockEntries.forEach(entry => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl";
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs w-6 text-center">${entry.rank}th</span>
+                            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500">${entry.name[0]}</div>
+                            <div>
+                                <div class="text-xs font-bold">${entry.name}</div>
+                            </div>
+                        </div>
+                        <span class="text-xs font-black text-cyan-400">${entry.score.toLocaleString()} pts</span>
+                    `;
+                    listContainer.appendChild(div);
+                });
+            }
+        }
+
+        // System Toasts
+        function showToast(message) {
+            const toast = document.getElementById('toast-message');
+            const toastText = document.getElementById('toast-text');
+            toastText.innerText = message;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2500);
+        }
+    </script>
+</body>
+
+</html>
