@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stack Color Rush - Facebook & Poki Instant Game</title>
+    <title>Stack Color Rush</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome for gaming icons -->
@@ -85,7 +85,7 @@
         <pre id="global-error-stack" class="text-[10px] opacity-90 whitespace-pre-wrap mt-1"></pre>
     </div>
 
-    <!-- Poki / Facebook Instant Game Header -->
+    <!-- Game Header -->
     <header class="bg-slate-950 border-b border-slate-900 px-4 py-2 flex items-center justify-between z-50">
         <div class="flex items-center space-x-2">
             <button onclick="exitGame()" class="text-slate-400 hover:text-white transition focus:outline-none">
@@ -146,21 +146,25 @@
 
             <!-- Social Lobby Tabs -->
             <div class="grid grid-cols-3 gap-2 w-full px-2">
+                <!-- START_FB_ONLY -->
                 <button onclick="openTab('leaderboard')"
                     class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95">
                     <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
                     <span class="text-[10px] font-semibold text-slate-300">LEADERBOARD</span>
                 </button>
+                <!-- END_FB_ONLY -->
                 <button onclick="openTab('skins')"
                     class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95">
                     <i class="fa-solid fa-palette text-pink-400 text-lg"></i>
                     <span class="text-[10px] font-semibold text-slate-300">SKIN SHOP</span>
                 </button>
+                <!-- START_FB_ONLY -->
                 <button onclick="inviteFriends()"
                     class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95">
                     <i class="fa-solid fa-user-plus text-cyan-400 text-lg"></i>
                     <span class="text-[10px] font-semibold text-slate-300">CHALLENGE</span>
                 </button>
+                <!-- END_FB_ONLY -->
             </div>
         </div>
 
@@ -227,13 +231,13 @@
             </div>
         </div>
 
-        <!-- TAB: Leaderboards (Facebook Friends) -->
+        <!-- TAB: Leaderboards -->
         <div id="tab-leaderboard"
             class="hidden absolute inset-0 bg-slate-950/95 z-40 p-4 flex flex-col justify-between">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-trophy text-amber-400 text-xl"></i>
-                    <h3 class="text-base font-bold">Facebook Leaderboard</h3>
+                    <h3 class="text-base font-bold">Leaderboard</h3>
                 </div>
                 <button onclick="closeTab('leaderboard')" class="text-slate-400 hover:text-white">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -432,11 +436,13 @@
                     <i class="fa-solid fa-circle-play text-sm"></i>
                     <span>Watch Ad for 3x Coins!</span>
                 </button>
+                <!-- START_FB_ONLY -->
                 <button onclick="shareGameResult()"
                     class="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 rounded-xl text-xs flex items-center justify-center space-x-2">
                     <i class="fa-brands fa-facebook"></i>
                     <span>Share Score on Facebook Feed</span>
                 </button>
+                <!-- END_FB_ONLY -->
                 <div class="grid grid-cols-2 gap-3">
                     <button onclick="restartGame()"
                         class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-wide">
@@ -461,7 +467,7 @@
 
     <!-- Footer -->
     <footer class="bg-slate-950 text-center py-2 border-t border-slate-900 text-[10px] text-slate-600">
-        Stack Color Rush Prototyping Engine for Facebook Instant Games & Poki
+        Stack Color Rush
     </footer>
 
     <!-- SDK & Game Logic Scripts -->
@@ -2141,7 +2147,15 @@
         }
 
         function exitGame() {
-            showToast("Safely returning to Facebook Gaming Feed.");
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                showToast("Returning to Facebook Gaming...");
+                /* END_FB_ONLY */
+            } else {
+                /* START_POKI_ONLY */
+                showToast("Thanks for playing!");
+                /* END_POKI_ONLY */
+            }
         }
 
         // Dynamic skins handler
