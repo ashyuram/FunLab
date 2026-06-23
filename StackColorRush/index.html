@@ -13,8 +13,14 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Inter:wght@400;600;800&display=swap"
         rel="stylesheet">
+    <!-- START_FB_ONLY -->
     <!-- Facebook Instant Games SDK -->
     <script src="https://connect.facebook.net/en_US/fbinstant.7.1.js"></script>
+    <!-- END_FB_ONLY -->
+    <!-- START_POKI_ONLY -->
+    <!-- Poki SDK -->
+    <script src="https://game-cdn.poki.com/binaries/v4/poki-sdk.js"></script>
+    <!-- END_POKI_ONLY -->
     <style>
         body {
             font-family: 'Outfit', 'Inter', sans-serif;
@@ -493,10 +499,26 @@
             }
         };
 
+        // Detect platform
+        let currentPlatform = 'facebook'; // Default template version
+
         // Detect local execution to immediately bypass native SDK hanging promises
         const isLocalHost = window.location.hostname === 'localhost' ||
             window.location.hostname === '127.0.0.1' ||
             window.location.protocol === 'file:';
+
+        // Detect query parameter for local development testing
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('platform') === 'poki') {
+            currentPlatform = 'poki';
+        } else if (urlParams.get('platform') === 'facebook' || urlParams.get('platform') === 'fb') {
+            currentPlatform = 'facebook';
+        } else {
+            // Auto detect from URL if not specified
+            if (window.location.hostname.includes('poki') || window.location.href.includes('poki')) {
+                currentPlatform = 'poki';
+            }
+        }
 
         function setupRobustMockSDKs(force = false) {
             // Force mock if running locally to prevent SDK hanging
@@ -508,14 +530,14 @@
                     }),
                     gameplayStart: () => console.log("[PokiSDK Mock] gameplayStart"),
                     gameplayStop: () => console.log("[PokiSDK Mock] gameplayStop"),
-                    commercialBreak: (callback) => {
+                    commercialBreak: () => new Promise((resolve) => {
                         console.log("[PokiSDK Mock] commercialBreak running");
-                        if (callback) callback();
-                    },
-                    rewardedBreak: (callback) => {
+                        resolve();
+                    }),
+                    rewardedBreak: () => new Promise((resolve) => {
                         console.log("[PokiSDK Mock] rewardedBreak running");
-                        if (callback) callback(true);
-                    }
+                        resolve(true);
+                    })
                 };
             }
 
@@ -592,8 +614,9 @@
         }
 
         // ----------------------------------------------------
-        // FACEBOOK AUDIENCE NETWORK (FAN) ADS CONTROLLER
+        // PLATFORM ADVERTISING CONTROLLER
         // ----------------------------------------------------
+        /* START_FB_ONLY */
         const INTERSTITIAL_PLACEMENT_ID = '1268848091767887_1272707854715244';
         const REWARDED_PLACEMENT_ID = '1268848091767887_1272707594715270';
 
@@ -641,30 +664,57 @@
                     console.warn("[FBInstant] Failed to preload Rewarded Video:", err);
                 });
         }
+        /* END_FB_ONLY */
+
+        /* START_POKI_ONLY */
+        function preloadInterstitial() {}
+        function preloadRewardedVideo() {}
+        /* END_POKI_ONLY */
 
         function showInterstitialAd() {
-            if (isLocalHost) {
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                if (isLocalHost) {
+                    console.log("[Mock Ad] Triggering mock Interstitial Ad");
+                    return Promise.resolve();
+                }
+                if (preloadedInterstitial) {
+                    return preloadedInterstitial.showAsync()
+                        .then(() => {
+                            preloadedInterstitial = null;
+                            preloadInterstitial();
+                        })
+                        .catch(err => {
+                            console.warn("Failed to show preloaded Interstitial:", err);
+                            preloadedInterstitial = null;
+                            preloadInterstitial();
+                        });
+                } else {
+                    return FBInstant.getInterstitialAdAsync(INTERSTITIAL_PLACEMENT_ID)
+                        .then(ad => ad.loadAsync().then(() => ad.showAsync()))
+                        .then(() => preloadInterstitial())
+                        .catch(err => {
+                            console.warn("Direct Interstitial ad load/show failed:", err);
+                        });
+                }
+                /* END_FB_ONLY */
+            } else if (currentPlatform === 'poki') {
+                /* START_POKI_ONLY */
+                return new Promise((resolve) => {
+                    PokiSDK.commercialBreak()
+                        .then(() => {
+                            console.log("[PokiSDK] Commercial break finished");
+                            resolve();
+                        })
+                        .catch(err => {
+                            console.warn("[PokiSDK] Commercial break error:", err);
+                            resolve();
+                        });
+                });
+                /* END_POKI_ONLY */
+            } else {
                 console.log("[Mock Ad] Triggering mock Interstitial Ad");
                 return Promise.resolve();
-            }
-            if (preloadedInterstitial) {
-                return preloadedInterstitial.showAsync()
-                    .then(() => {
-                        preloadedInterstitial = null;
-                        preloadInterstitial();
-                    })
-                    .catch(err => {
-                        console.warn("Failed to show preloaded Interstitial:", err);
-                        preloadedInterstitial = null;
-                        preloadInterstitial();
-                    });
-            } else {
-                return FBInstant.getInterstitialAdAsync(INTERSTITIAL_PLACEMENT_ID)
-                    .then(ad => ad.loadAsync().then(() => ad.showAsync()))
-                    .then(() => preloadInterstitial())
-                    .catch(err => {
-                        console.warn("Direct Interstitial ad load/show failed:", err);
-                    });
             }
         }
 
@@ -673,96 +723,132 @@
         function initPlatforms() {
             setupRobustMockSDKs(); // Ensure stubs are present initially
 
-            // Prepare safe promises that never reject
-            const fbInitPromise = new Promise((resolve) => {
-                try {
-                    // If local, bypass actual SDK call entirely to prevent infinite pending status
-                    if (isLocalHost) {
-                        setupRobustMockSDKs(true);
-                        resolve();
-                        return;
-                    }
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                const fbInitPromise = new Promise((resolve) => {
+                    try {
+                        // If local, bypass actual SDK call entirely to prevent infinite pending status
+                        if (isLocalHost) {
+                            setupRobustMockSDKs(true);
+                            resolve();
+                            return;
+                        }
 
-                    if (typeof FBInstant.initializeAsync === 'function') {
-                        FBInstant.initializeAsync()
-                            .then(() => {
-                                try { FBInstant.setLoadingProgress(100); } catch (e) { }
-                                resolve();
-                            })
-                            .catch((err) => {
-                                console.warn("FBInstant.initializeAsync promise rejected:", err);
-                                setupRobustMockSDKs(true); // Force back mock
-                                resolve();
-                            });
-                    } else {
-                        setupRobustMockSDKs(true);
-                        resolve();
-                    }
-                } catch (e) {
-                    console.warn("FBInstant initialization error:", e);
-                    setupRobustMockSDKs(true);
-                    resolve();
-                }
-            });
-
-            const pokiInitPromise = new Promise((resolve) => {
-                try {
-                    if (isLocalHost) {
-                        setupRobustMockSDKs(true);
-                        resolve();
-                        return;
-                    }
-
-                    if (typeof PokiSDK.init === 'function') {
-                        PokiSDK.init()
-                            .then(() => resolve())
-                            .catch((err) => {
-                                console.warn("PokiSDK.init promise rejected:", err);
-                                setupRobustMockSDKs(true);
-                                resolve();
-                            });
-                    } else {
+                        if (typeof FBInstant.initializeAsync === 'function') {
+                            FBInstant.initializeAsync()
+                                .then(() => {
+                                    try { FBInstant.setLoadingProgress(100); } catch (e) { }
+                                    resolve();
+                                })
+                                .catch((err) => {
+                                    console.warn("FBInstant.initializeAsync promise rejected:", err);
+                                    setupRobustMockSDKs(true); // Force back mock
+                                    resolve();
+                                });
+                        } else {
+                            setupRobustMockSDKs(true);
+                            resolve();
+                        }
+                    } catch (e) {
+                        console.warn("FBInstant initialization error:", e);
                         setupRobustMockSDKs(true);
                         resolve();
                     }
-                } catch (e) {
-                    console.warn("PokiSDK initialization error:", e);
-                    setupRobustMockSDKs(true);
-                    resolve();
-                }
-            });
+                });
 
-            // Start initialization chain
-            Promise.all([fbInitPromise, pokiInitPromise]).then(() => {
-                console.log("Both platforms sequence completed successfully (with safety stubs if needed).");
-                try {
-                    if (typeof FBInstant.startGameAsync === 'function') {
-                        FBInstant.startGameAsync()
-                            .then(() => {
-                                try { showToast(`Welcome, ${FBInstant.player.getName()}!`); } catch (e) { }
-                                loadGameSaveData();
-                                preloadInterstitial();
-                                preloadRewardedVideo();
-                            })
-                            .catch((e) => {
-                                console.warn("startGameAsync failed:", e);
-                                loadGameSaveData();
-                                preloadInterstitial();
-                                preloadRewardedVideo();
-                            });
-                    } else {
+                fbInitPromise.then(() => {
+                    console.log("Facebook platform sequence completed successfully.");
+                    try {
+                        if (typeof FBInstant.startGameAsync === 'function') {
+                            FBInstant.startGameAsync()
+                                .then(() => {
+                                    try { showToast(`Welcome, ${FBInstant.player.getName()}!`); } catch (e) { }
+                                    loadGameSaveData();
+                                    preloadInterstitial();
+                                    preloadRewardedVideo();
+                                })
+                                .catch((e) => {
+                                    console.warn("startGameAsync failed:", e);
+                                    loadGameSaveData();
+                                    preloadInterstitial();
+                                    preloadRewardedVideo();
+                                });
+                        } else {
+                            loadGameSaveData();
+                            preloadInterstitial();
+                            preloadRewardedVideo();
+                        }
+                    } catch (e) {
+                        console.warn("Error starting game block:", e);
                         loadGameSaveData();
-                        preloadInterstitial();
-                        preloadRewardedVideo();
                     }
-                } catch (e) {
-                    console.warn("Error starting game block:", e);
+                }).catch((err) => {
+                    console.warn("Initialization chain critical error:", err);
                     loadGameSaveData();
-                }
-            }).catch((err) => {
-                console.warn("Initialization chain critical error:", err);
+                });
+                /* END_FB_ONLY */
+            } else if (currentPlatform === 'poki') {
+                /* START_POKI_ONLY */
+                const pokiInitPromise = new Promise((resolve) => {
+                    try {
+                        if (isLocalHost) {
+                            setupRobustMockSDKs(true);
+                            resolve();
+                            return;
+                        }
+
+                        if (typeof PokiSDK.init === 'function') {
+                            PokiSDK.init()
+                                .then(() => resolve())
+                                .catch((err) => {
+                                    console.warn("PokiSDK.init promise rejected:", err);
+                                    setupRobustMockSDKs(true);
+                                    resolve();
+                                });
+                        } else {
+                            setupRobustMockSDKs(true);
+                            resolve();
+                        }
+                    } catch (e) {
+                        console.warn("PokiSDK initialization error:", e);
+                        setupRobustMockSDKs(true);
+                        resolve();
+                    }
+                });
+
+                pokiInitPromise.then(() => {
+                    console.log("Poki platform sequence completed successfully.");
+                    try { PokiSDK.gameplayStart(); } catch (e) { }
+                    loadGameSaveData();
+                    adjustUIForPlatform();
+                });
+                /* END_POKI_ONLY */
+            } else {
                 loadGameSaveData();
-            });
+                adjustUIForPlatform();
+            }
+        }
+
+        function adjustUIForPlatform() {
+            if (currentPlatform !== 'facebook') {
+                // Find and hide Facebook social lobby buttons
+                const lbBtn = document.querySelector("button[onclick=\"openTab('leaderboard')\"]");
+                const challengeBtn = document.querySelector("button[onclick=\"inviteFriends()\"]");
+                const skinsBtn = document.querySelector("button[onclick=\"openTab('skins')\"]");
+                
+                if (lbBtn) lbBtn.style.display = 'none';
+                if (challengeBtn) challengeBtn.style.display = 'none';
+                
+                if (skinsBtn && skinsBtn.parentElement) {
+                    const parent = skinsBtn.parentElement;
+                    parent.className = "flex justify-center w-full px-2";
+                    skinsBtn.className = "bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95 w-1/3";
+                }
+                
+                // Hide result screen Facebook feed share button
+                const shareBtn = document.querySelector("button[onclick=\"shareGameResult()\"]");
+                if (shareBtn) shareBtn.style.display = 'none';
+            }
         }
 
         // Run platform initializer on load
@@ -1790,11 +1876,15 @@
             PokiSDK.gameplayStop();
             playSound('level_clear');
 
-            // Write scores to Facebook Leaderboard Async
-            FBInstant.getLeaderboardAsync('global_leaderboard')
-                .then(leaderboard => leaderboard.setScoreAsync(player.score))
-                .then(() => console.log("Facebook Score sync complete!"))
-                .catch(err => console.warn("Could not sync score to Facebook:", err));
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                // Write scores to Facebook Leaderboard Async
+                FBInstant.getLeaderboardAsync('global_leaderboard')
+                    .then(leaderboard => leaderboard.setScoreAsync(player.score))
+                    .then(() => console.log("Facebook Score sync complete!"))
+                    .catch(err => console.warn("Could not sync score to Facebook:", err));
+                /* END_FB_ONLY */
+            }
 
             showResultDashboard(true, finalMult);
         }
@@ -1860,66 +1950,96 @@
         let adTimerInterval = null;
         let adAudioMuted = false;
 
+        function runMockAdVideo() {
+            // Local simulation video player
+            document.getElementById('popup-ad').classList.remove('hidden');
+
+            adTimer = 5;
+            document.getElementById('ad-timer-countdown').innerText = adTimer;
+            document.getElementById('ad-close-btn').disabled = true;
+            document.getElementById('ad-close-btn').className = "text-slate-500 cursor-not-allowed opacity-50 text-sm font-bold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800";
+            document.getElementById('ad-progress-bar').style.width = '0%';
+
+            let elapsed = 0;
+            if (adTimerInterval) clearInterval(adTimerInterval);
+
+            adTimerInterval = setInterval(() => {
+                elapsed += 0.1;
+                const percent = Math.min((elapsed / 5) * 100, 100);
+                document.getElementById('ad-progress-bar').style.width = `${percent}%`;
+
+                if (elapsed >= 5) {
+                    clearInterval(adTimerInterval);
+                    const closeBtn = document.getElementById('ad-close-btn');
+                    closeBtn.disabled = false;
+                    closeBtn.className = "text-cyan-400 text-sm font-bold bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700 animate-pulse cursor-pointer";
+                    document.getElementById('ad-timer-countdown').innerText = "✓";
+                } else {
+                    document.getElementById('ad-timer-countdown').innerText = Math.ceil(5 - elapsed);
+                }
+            }, 100);
+        }
+
         function watchRewardedAd(type) {
             adRewardType = type;
 
-            if (isLocalHost) {
-                // Local simulation video player
-                document.getElementById('popup-ad').classList.remove('hidden');
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                if (isLocalHost) {
+                    runMockAdVideo();
+                } else {
+                    showToast("Loading ad...");
 
-                adTimer = 5;
-                document.getElementById('ad-timer-countdown').innerText = adTimer;
-                document.getElementById('ad-close-btn').disabled = true;
-                document.getElementById('ad-close-btn').className = "text-slate-500 cursor-not-allowed opacity-50 text-sm font-bold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800";
-                document.getElementById('ad-progress-bar').style.width = '0%';
+                    const showRewarded = (adInstance) => {
+                        adInstance.showAsync()
+                            .then(() => {
+                                claimAdReward();
+                                preloadedRewardedVideo = null;
+                                preloadRewardedVideo();
+                            })
+                            .catch(err => {
+                                console.warn("Failed to show Rewarded Video:", err);
+                                showToast("Ad playback failed.");
+                                preloadedRewardedVideo = null;
+                                preloadRewardedVideo();
+                            });
+                    };
 
-                let elapsed = 0;
-                if (adTimerInterval) clearInterval(adTimerInterval);
-
-                adTimerInterval = setInterval(() => {
-                    elapsed += 0.1;
-                    const percent = Math.min((elapsed / 5) * 100, 100);
-                    document.getElementById('ad-progress-bar').style.width = `${percent}%`;
-
-                    if (elapsed >= 5) {
-                        clearInterval(adTimerInterval);
-                        const closeBtn = document.getElementById('ad-close-btn');
-                        closeBtn.disabled = false;
-                        closeBtn.className = "text-cyan-400 text-sm font-bold bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700 animate-pulse cursor-pointer";
-                        document.getElementById('ad-timer-countdown').innerText = "✓";
+                    if (preloadedRewardedVideo) {
+                        showRewarded(preloadedRewardedVideo);
                     } else {
-                        document.getElementById('ad-timer-countdown').innerText = Math.ceil(5 - elapsed);
+                        FBInstant.getRewardedVideoAsync(REWARDED_PLACEMENT_ID)
+                            .then(ad => ad.loadAsync().then(() => showRewarded(ad)))
+                            .catch(err => {
+                                console.warn("Direct Rewarded Video load failed:", err);
+                                showToast("No ads available. Please try again.");
+                            });
                     }
-                }, 100);
-            } else {
-                // Actual Facebook Audience Network Rewarded Ad
-                showToast("Loading ad...");
-
-                const showRewarded = (adInstance) => {
-                    adInstance.showAsync()
-                        .then(() => {
-                            claimAdReward();
-                            preloadedRewardedVideo = null;
-                            preloadRewardedVideo();
+                }
+                /* END_FB_ONLY */
+            } else if (currentPlatform === 'poki') {
+                /* START_POKI_ONLY */
+                if (isLocalHost) {
+                    // Local simulation mock resolved promise
+                    claimAdReward();
+                } else {
+                    showToast("Loading ad...");
+                    PokiSDK.rewardedBreak()
+                        .then((withReward) => {
+                            if (withReward) {
+                                claimAdReward();
+                            } else {
+                                showToast("Ad break closed without reward.");
+                            }
                         })
                         .catch(err => {
-                            console.warn("Failed to show Rewarded Video:", err);
+                            console.warn("[PokiSDK] Rewarded break error:", err);
                             showToast("Ad playback failed.");
-                            preloadedRewardedVideo = null;
-                            preloadRewardedVideo();
-                        });
-                };
-
-                if (preloadedRewardedVideo) {
-                    showRewarded(preloadedRewardedVideo);
-                } else {
-                    FBInstant.getRewardedVideoAsync(REWARDED_PLACEMENT_ID)
-                        .then(ad => ad.loadAsync().then(() => showRewarded(ad)))
-                        .catch(err => {
-                            console.warn("Direct Rewarded Video load failed:", err);
-                            showToast("No ads available. Please try again.");
                         });
                 }
+                /* END_POKI_ONLY */
+            } else {
+                runMockAdVideo();
             }
         }
 
@@ -1985,27 +2105,39 @@
         }
 
         function inviteFriends() {
-            FBInstant.context.chooseAsync()
-                .then(() => {
-                    showToast("Messenger Challenge Card Sent!");
-                })
-                .catch(err => {
-                    console.warn("Context choice cancelled:", err);
-                    showToast("Messenger Challenge Sent to Friend!");
-                });
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                FBInstant.context.chooseAsync()
+                    .then(() => {
+                        showToast("Messenger Challenge Card Sent!");
+                    })
+                    .catch(err => {
+                        console.warn("Context choice cancelled:", err);
+                        showToast("Messenger Challenge Sent to Friend!");
+                    });
+                /* END_FB_ONLY */
+            } else {
+                showToast("Challenge sent to your friends!");
+            }
         }
 
         function shareGameResult() {
-            FBInstant.shareAsync({
-                intent: 'SHARE',
-                image: 'https://placehold.co/600x315/06b6d4/ffffff?text=Stack+Color+Rush+Score+22480',
-                text: `${FBInstant.player.getName()} achieved ${player.score} pts in Stack Color Rush! Challenge now!`,
-                data: { score: player.score }
-            }).then(() => {
-                showToast("Successfully shared to Feed!");
-            }).catch(() => {
-                showToast("Successfully shared to Feed!");
-            });
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                FBInstant.shareAsync({
+                    intent: 'SHARE',
+                    image: 'https://placehold.co/600x315/06b6d4/ffffff?text=Stack+Color+Rush+Score+22480',
+                    text: `${FBInstant.player.getName()} achieved ${player.score} pts in Stack Color Rush! Challenge now!`,
+                    data: { score: player.score }
+                }).then(() => {
+                    showToast("Successfully shared to Feed!");
+                }).catch(() => {
+                    showToast("Successfully shared to Feed!");
+                });
+                /* END_FB_ONLY */
+            } else {
+                showToast("Successfully shared score!");
+            }
         }
 
         function exitGame() {
@@ -2066,40 +2198,67 @@
             const listContainer = document.getElementById('leaderboard-list');
             listContainer.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs"><i class="fa-solid fa-spinner animate-spin mr-2"></i>Loading Leaderboard...</div>';
 
-            FBInstant.getLeaderboardAsync('global_leaderboard')
-                .then(leaderboard => leaderboard.getEntriesAsync(10, 0))
-                .then(entries => {
-                    listContainer.innerHTML = '';
-                    entries.forEach(entry => {
-                        const rank = entry.getRank();
-                        const score = entry.getScore();
-                        const photo = entry.getPlayer().getPhoto();
-                        const name = entry.getPlayer().getName();
+            if (currentPlatform === 'facebook') {
+                /* START_FB_ONLY */
+                FBInstant.getLeaderboardAsync('global_leaderboard')
+                    .then(leaderboard => leaderboard.getEntriesAsync(10, 0))
+                    .then(entries => {
+                        listContainer.innerHTML = '';
+                        entries.forEach(entry => {
+                            const rank = entry.getRank();
+                            const score = entry.getScore();
+                            const photo = entry.getPlayer().getPhoto();
+                            const name = entry.getPlayer().getName();
 
-                        let rankBadge = `${rank}th`;
-                        if (rank === 1) rankBadge = '<span class="text-yellow-400 font-black">1st</span>';
-                        if (rank === 2) rankBadge = '<span class="text-slate-300 font-bold">2nd</span>';
-                        if (rank === 3) rankBadge = '<span class="text-amber-600 font-semibold">3rd</span>';
+                            let rankBadge = `${rank}th`;
+                            if (rank === 1) rankBadge = '<span class="text-yellow-400 font-black">1st</span>';
+                            if (rank === 2) rankBadge = '<span class="text-slate-300 font-bold">2nd</span>';
+                            if (rank === 3) rankBadge = '<span class="text-amber-600 font-semibold">3rd</span>';
 
-                        const div = document.createElement('div');
-                        div.className = "flex items-center justify-between bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl";
-                        div.innerHTML = `
-                            <div class="flex items-center space-x-3">
-                                <span class="text-xs w-6 text-center">${rankBadge}</span>
-                                <img src="${photo}" alt="avatar" class="w-8 h-8 rounded-full border border-slate-700">
-                                <div>
-                                    <div class="text-xs font-bold">${name}</div>
+                            const div = document.createElement('div');
+                            div.className = "flex items-center justify-between bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl";
+                            div.innerHTML = `
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-xs w-6 text-center">${rankBadge}</span>
+                                    <img src="${photo}" alt="avatar" class="w-8 h-8 rounded-full border border-slate-700">
+                                    <div>
+                                        <div class="text-xs font-bold">${name}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <span class="text-xs font-black text-cyan-400">${score.toLocaleString()} pts</span>
-                        `;
-                        listContainer.appendChild(div);
+                                <span class="text-xs font-black text-cyan-400">${score.toLocaleString()} pts</span>
+                            `;
+                            listContainer.appendChild(div);
+                        });
+                    })
+                    .catch(err => {
+                        console.warn("Error loading Facebook leaderboard:", err);
+                        listContainer.innerHTML = '<div class="text-center py-6 text-red-400 text-xs">Unable to sync leaderboard.</div>';
                     });
-                })
-                .catch(err => {
-                    console.warn("Error loading Facebook leaderboard:", err);
-                    listContainer.innerHTML = '<div class="text-center py-6 text-red-400 text-xs">Unable to sync leaderboard.</div>';
+                /* END_FB_ONLY */
+            } else {
+                // Poki/Mock: Local simulated leaderboard
+                listContainer.innerHTML = '';
+                const mockEntries = [
+                    { rank: 1, name: "Slime King", score: 55000 },
+                    { rank: 2, name: "Runner Pro", score: 42100 },
+                    { rank: 3, name: "Stack Master", score: 31000 }
+                ];
+                mockEntries.forEach(entry => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl";
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xs w-6 text-center">${entry.rank}th</span>
+                            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500">${entry.name[0]}</div>
+                            <div>
+                                <div class="text-xs font-bold">${entry.name}</div>
+                            </div>
+                        </div>
+                        <span class="text-xs font-black text-cyan-400">${entry.score.toLocaleString()} pts</span>
+                    `;
+                    listContainer.appendChild(div);
                 });
+            }
         }
 
         // System Toasts
