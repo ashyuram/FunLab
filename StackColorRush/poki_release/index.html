@@ -18,6 +18,9 @@
     <!-- Poki SDK -->
     <script src="https://game-cdn.poki.com/binaries/v4/poki-sdk.js"></script>
     
+    
+    <script src="BasePlatform.js"></script>
+    <script src="Platform.js"></script>
     <style>
         body {
             font-family: 'Outfit', 'Inter', sans-serif;
@@ -484,222 +487,33 @@
             }
         };
 
-        // Detect platform
-        let currentPlatform = 'poki'; // Default template version
+        // Instantiate OOP Platform Manager
+        const platform = new Platform();
+        const currentPlatform = platform.currentPlatform;
+        const isLocalHost = platform.isLocalHost;
 
-        // Detect local execution to immediately bypass native SDK hanging promises
-        const isLocalHost = window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1' ||
-            window.location.protocol === 'file:';
-
-        // Detect query parameter for local development testing
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('platform') === 'poki') {
-            currentPlatform = 'poki';
-        } else if (urlParams.get('platform') === 'facebook' || urlParams.get('platform') === 'fb') {
-            currentPlatform = 'facebook';
-        } else {
-            // Auto detect from URL if not specified
-            if (window.location.hostname.includes('poki') || window.location.href.includes('poki')) {
-                currentPlatform = 'poki';
-            }
+        function platformGameplayStart() {
+            platform.gameplayStart();
         }
 
-        function setupRobustMockSDKs(force = false) {
-            // Force mock if running locally to prevent SDK hanging
-            if (isLocalHost || force || !window.PokiSDK || typeof window.PokiSDK.init !== 'function') {
-                window.PokiSDK = {
-                    init: () => new Promise((resolve) => {
-                        console.log("[PokiSDK Mock] Initialized successfully");
-                        resolve(true);
-                    }),
-                    gameplayStart: () => console.log("[PokiSDK Mock] gameplayStart"),
-                    gameplayStop: () => console.log("[PokiSDK Mock] gameplayStop"),
-                    commercialBreak: () => new Promise((resolve) => {
-                        console.log("[PokiSDK Mock] commercialBreak running");
-                        resolve();
-                    }),
-                    rewardedBreak: () => new Promise((resolve) => {
-                        console.log("[PokiSDK Mock] rewardedBreak running");
-                        resolve(true);
-                    })
-                };
-            }
-
-            if (isLocalHost || force || !window.FBInstant || typeof window.FBInstant.initializeAsync !== 'function') {
-                window.FBInstant = {
-                    initializeAsync: () => new Promise((resolve) => {
-                        console.log("[FBInstant Mock] initializeAsync started");
-                        resolve();
-                    }),
-                    setLoadingProgress: (prog) => console.log(`[FBInstant Mock] loadingProgress: ${prog}%`),
-                    startGameAsync: () => new Promise((resolve) => {
-                        console.log("[FBInstant Mock] startGameAsync completed");
-                        resolve();
-                    }),
-                    player: {
-                        getName: () => "Local Slime Master",
-                        getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME",
-                        getID: () => "12345678"
-                    },
-                    getLeaderboardAsync: (name) => new Promise((resolve) => {
-                        resolve({
-                            getName: () => name,
-                            setScoreAsync: (score) => {
-                                console.log(`[FBInstant Mock] setScoreAsync to: ${score}`);
-                                return Promise.resolve({ getScore: () => score });
-                            },
-                            getEntriesAsync: (limit, offset) => {
-                                return Promise.resolve([
-                                    { getRank: () => 1, getScore: () => 48200, getPlayer: () => ({ getName: () => "Me (Player)", getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME" }) },
-                                    { getRank: () => 2, getScore: () => 38120, getPlayer: () => ({ getName: () => "Sophia Kim", getPhoto: () => "https://placehold.co/150x150/ec4899/ffffff?text=JY" }) },
-                                    { getRank: () => 3, getScore: () => 24950, getPlayer: () => ({ getName: () => "David Park", getPhoto: () => "https://placehold.co/150x150/f59e0b/ffffff?text=JS" }) }
-                                ]);
-                            }
-                        });
-                    }),
-                    shareAsync: (config) => {
-                        console.log("[FBInstant Mock] shareAsync triggered:", config);
-                        return Promise.resolve();
-                    },
-                    context: {
-                        chooseAsync: () => {
-                            console.log("[FBInstant Mock] context.chooseAsync triggered");
-                            return Promise.resolve();
-                        }
-                    }
-                };
-            }
+        function platformGameplayStop() {
+            platform.gameplayStop();
         }
 
-        // Run mock setup immediately at script parsing time
-        setupRobustMockSDKs();
-
-        // roundRect Polyfill for older mobile browsers
-        if (typeof CanvasRenderingContext2D.prototype.roundRect !== 'function') {
-            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-                if (typeof r === 'number') {
-                    r = { tl: r, tr: r, br: r, bl: r };
-                } else {
-                    r = { tl: 0, tr: 0, br: 0, bl: 0, ...r };
-                }
-                this.beginPath();
-                this.moveTo(x + r.tl, y);
-                this.lineTo(x + w - r.tr, y);
-                this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
-                this.lineTo(x + w, y + h - r.br);
-                this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
-                this.lineTo(x + r.bl, y + h);
-                this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
-                this.lineTo(x, y + r.tl);
-                this.quadraticCurveTo(x, y, x + r.tl, y);
-                this.closePath();
-                return this;
-            };
+        function platformHappyTime() {
+            platform.happyTime();
         }
-
-        // ----------------------------------------------------
-        // PLATFORM ADVERTISING CONTROLLER
-        // ----------------------------------------------------
-        
-
-        
-        function preloadInterstitial() {}
-        function preloadRewardedVideo() {}
-        
 
         function showInterstitialAd() {
-            if (currentPlatform === 'facebook') {
-                
-            } else if (currentPlatform === 'poki') {
-                
-                return new Promise((resolve) => {
-                    PokiSDK.commercialBreak()
-                        .then(() => {
-                            console.log("[PokiSDK] Commercial break finished");
-                            resolve();
-                        })
-                        .catch(err => {
-                            console.warn("[PokiSDK] Commercial break error:", err);
-                            resolve();
-                        });
-                });
-                
-            } else {
-                console.log("[Mock Ad] Triggering mock Interstitial Ad");
-                return Promise.resolve();
-            }
+            return platform.showInterstitial();
         }
-
 
         // Initialize Platforms with error safety wrappers
         function initPlatforms() {
-            setupRobustMockSDKs(); // Ensure stubs are present initially
-
-            if (currentPlatform === 'facebook') {
-                
-            } else if (currentPlatform === 'poki') {
-                
-                const pokiInitPromise = new Promise((resolve) => {
-                    try {
-                        if (isLocalHost) {
-                            setupRobustMockSDKs(true);
-                            resolve();
-                            return;
-                        }
-
-                        if (typeof PokiSDK.init === 'function') {
-                            PokiSDK.init()
-                                .then(() => resolve())
-                                .catch((err) => {
-                                    console.warn("PokiSDK.init promise rejected:", err);
-                                    setupRobustMockSDKs(true);
-                                    resolve();
-                                });
-                        } else {
-                            setupRobustMockSDKs(true);
-                            resolve();
-                        }
-                    } catch (e) {
-                        console.warn("PokiSDK initialization error:", e);
-                        setupRobustMockSDKs(true);
-                        resolve();
-                    }
-                });
-
-                pokiInitPromise.then(() => {
-                    console.log("Poki platform sequence completed successfully.");
-                    try { PokiSDK.gameplayStart(); } catch (e) { }
-                    loadGameSaveData();
-                    adjustUIForPlatform();
-                });
-                
-            } else {
+            return platform.init().then(() => {
                 loadGameSaveData();
-                adjustUIForPlatform();
-            }
-        }
-
-        function adjustUIForPlatform() {
-            if (currentPlatform !== 'facebook') {
-                // Find and hide Facebook social lobby buttons
-                const lbBtn = document.querySelector("button[onclick=\"openTab('leaderboard')\"]");
-                const challengeBtn = document.querySelector("button[onclick=\"inviteFriends()\"]");
-                const skinsBtn = document.querySelector("button[onclick=\"openTab('skins')\"]");
-                
-                if (lbBtn) lbBtn.style.display = 'none';
-                if (challengeBtn) challengeBtn.style.display = 'none';
-                
-                if (skinsBtn && skinsBtn.parentElement) {
-                    const parent = skinsBtn.parentElement;
-                    parent.className = "flex justify-center w-full px-2";
-                    skinsBtn.className = "bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95 w-1/3";
-                }
-                
-                // Hide result screen Facebook feed share button
-                const shareBtn = document.querySelector("button[onclick=\"shareGameResult()\"]");
-                if (shareBtn) shareBtn.style.display = 'none';
-            }
+                platform.adjustUI();
+            });
         }
 
         // Run platform initializer on load
@@ -967,7 +781,7 @@
         // RUNNER GAME LOOP
         // ----------------------------------------------------
         function startGame(startWithFever = false) {
-            PokiSDK.gameplayStart();
+            platformGameplayStart();
 
             document.getElementById('screen-home').classList.add('hidden');
             document.getElementById('screen-game').classList.remove('hidden');
@@ -1705,7 +1519,7 @@
         // ----------------------------------------------------
         function triggerGameOver() {
             gameActive = false;
-            PokiSDK.gameplayStop();
+            platformGameplayStop();
 
             // Show Confirm Dialog for Revive
             document.getElementById('modal-confirm').classList.remove('hidden');
@@ -1724,7 +1538,8 @@
 
         function triggerLevelClear(finalMult) {
             gameActive = false;
-            PokiSDK.gameplayStop();
+            platformGameplayStop();
+            platformHappyTime();
             playSound('level_clear');
 
             if (currentPlatform === 'facebook') {
@@ -1827,33 +1642,7 @@
 
         function watchRewardedAd(type) {
             adRewardType = type;
-
-            if (currentPlatform === 'facebook') {
-                
-            } else if (currentPlatform === 'poki') {
-                
-                if (isLocalHost) {
-                    // Local simulation mock resolved promise
-                    claimAdReward();
-                } else {
-                    showToast("Loading ad...");
-                    PokiSDK.rewardedBreak()
-                        .then((withReward) => {
-                            if (withReward) {
-                                claimAdReward();
-                            } else {
-                                showToast("Ad break closed without reward.");
-                            }
-                        })
-                        .catch(err => {
-                            console.warn("[PokiSDK] Rewarded break error:", err);
-                            showToast("Ad playback failed.");
-                        });
-                }
-                
-            } else {
-                runMockAdVideo();
-            }
+            platform.showRewarded(type);
         }
 
         function claimAdReward() {
@@ -1918,29 +1707,19 @@
         }
 
         function inviteFriends() {
-            if (currentPlatform === 'facebook') {
-                
-            } else {
-                showToast("Challenge sent to your friends!");
-            }
+            
         }
 
         function shareGameResult() {
-            if (currentPlatform === 'facebook') {
-                
-            } else {
-                showToast("Successfully shared score!");
-            }
+            
         }
 
         function exitGame() {
-            if (currentPlatform === 'facebook') {
-                
-            } else {
-                
-                showToast("Thanks for playing!");
-                
-            }
+            
+            
+            platform.exitGame();
+            
+            
         }
 
         // Dynamic skins handler

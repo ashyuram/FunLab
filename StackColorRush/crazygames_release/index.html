@@ -13,18 +13,12 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Inter:wght@400;600;800&display=swap"
         rel="stylesheet">
-    <!-- START_FB_ONLY -->
-    <!-- Facebook Instant Games SDK -->
-    <script src="https://connect.facebook.net/en_US/fbinstant.7.1.js"></script>
-    <!-- END_FB_ONLY -->
-    <!-- START_POKI_ONLY -->
-    <!-- Poki SDK -->
-    <script src="https://game-cdn.poki.com/binaries/v4/poki-sdk.js"></script>
-    <!-- END_POKI_ONLY -->
-    <!-- START_CRAZY_ONLY -->
+    
+    
+    
     <!-- CrazyGames SDK -->
     <script src="https://sdk.crazygames.com/crazygames-sdk-v2.js"></script>
-    <!-- END_CRAZY_ONLY -->
+    
     <script src="BasePlatform.js"></script>
     <script src="Platform.js"></script>
     <style>
@@ -152,25 +146,13 @@
 
             <!-- Social Lobby Tabs -->
             <div class="grid grid-cols-3 gap-2 w-full px-2">
-                <!-- START_FB_ONLY -->
-                <button onclick="openTab('leaderboard')"
-                    class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95">
-                    <i class="fa-solid fa-trophy text-amber-400 text-lg"></i>
-                    <span class="text-[10px] font-semibold text-slate-300">LEADERBOARD</span>
-                </button>
-                <!-- END_FB_ONLY -->
+                
                 <button onclick="openTab('skins')"
                     class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95">
                     <i class="fa-solid fa-palette text-pink-400 text-lg"></i>
                     <span class="text-[10px] font-semibold text-slate-300">SKIN SHOP</span>
                 </button>
-                <!-- START_FB_ONLY -->
-                <button onclick="inviteFriends()"
-                    class="bg-slate-900/60 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl flex flex-col items-center text-center space-y-1 transition active:scale-95">
-                    <i class="fa-solid fa-user-plus text-cyan-400 text-lg"></i>
-                    <span class="text-[10px] font-semibold text-slate-300">CHALLENGE</span>
-                </button>
-                <!-- END_FB_ONLY -->
+                
             </div>
         </div>
 
@@ -442,13 +424,7 @@
                     <i class="fa-solid fa-circle-play text-sm"></i>
                     <span>Watch Ad for 3x Coins!</span>
                 </button>
-                <!-- START_FB_ONLY -->
-                <button onclick="shareGameResult()"
-                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3.5 rounded-xl text-xs flex items-center justify-center space-x-2">
-                    <i class="fa-brands fa-facebook"></i>
-                    <span>Share Score on Facebook Feed</span>
-                </button>
-                <!-- END_FB_ONLY -->
+                
                 <div class="grid grid-cols-2 gap-3">
                     <button onclick="restartGame()"
                         class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-3.5 rounded-xl text-xs uppercase tracking-wide">
@@ -1567,13 +1543,7 @@
             playSound('level_clear');
 
             if (currentPlatform === 'facebook') {
-                /* START_FB_ONLY */
-                // Write scores to Facebook Leaderboard Async
-                FBInstant.getLeaderboardAsync('global_leaderboard')
-                    .then(leaderboard => leaderboard.setScoreAsync(player.score))
-                    .then(() => console.log("Facebook Score sync complete!"))
-                    .catch(err => console.warn("Could not sync score to Facebook:", err));
-                /* END_FB_ONLY */
+                
             }
 
             showResultDashboard(true, finalMult);
@@ -1737,27 +1707,19 @@
         }
 
         function inviteFriends() {
-            /* START_FB_ONLY */
-            platform.inviteFriends();
-            /* END_FB_ONLY */
+            
         }
 
         function shareGameResult() {
-            /* START_FB_ONLY */
-            platform.shareGameResult(player.score);
-            /* END_FB_ONLY */
+            
         }
 
         function exitGame() {
-            /* START_FB_ONLY */
+            
+            
+            
             platform.exitGame();
-            /* END_FB_ONLY */
-            /* START_POKI_ONLY */
-            platform.exitGame();
-            /* END_POKI_ONLY */
-            /* START_CRAZY_ONLY */
-            platform.exitGame();
-            /* END_CRAZY_ONLY */
+            
         }
 
         // Dynamic skins handler
@@ -1815,42 +1777,7 @@
             listContainer.innerHTML = '<div class="text-center py-6 text-slate-500 text-xs"><i class="fa-solid fa-spinner animate-spin mr-2"></i>Loading Leaderboard...</div>';
 
             if (currentPlatform === 'facebook') {
-                /* START_FB_ONLY */
-                FBInstant.getLeaderboardAsync('global_leaderboard')
-                    .then(leaderboard => leaderboard.getEntriesAsync(10, 0))
-                    .then(entries => {
-                        listContainer.innerHTML = '';
-                        entries.forEach(entry => {
-                            const rank = entry.getRank();
-                            const score = entry.getScore();
-                            const photo = entry.getPlayer().getPhoto();
-                            const name = entry.getPlayer().getName();
-
-                            let rankBadge = `${rank}th`;
-                            if (rank === 1) rankBadge = '<span class="text-yellow-400 font-black">1st</span>';
-                            if (rank === 2) rankBadge = '<span class="text-slate-300 font-bold">2nd</span>';
-                            if (rank === 3) rankBadge = '<span class="text-amber-600 font-semibold">3rd</span>';
-
-                            const div = document.createElement('div');
-                            div.className = "flex items-center justify-between bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl";
-                            div.innerHTML = `
-                                <div class="flex items-center space-x-3">
-                                    <span class="text-xs w-6 text-center">${rankBadge}</span>
-                                    <img src="${photo}" alt="avatar" class="w-8 h-8 rounded-full border border-slate-700">
-                                    <div>
-                                        <div class="text-xs font-bold">${name}</div>
-                                    </div>
-                                </div>
-                                <span class="text-xs font-black text-cyan-400">${score.toLocaleString()} pts</span>
-                            `;
-                            listContainer.appendChild(div);
-                        });
-                    })
-                    .catch(err => {
-                        console.warn("Error loading Facebook leaderboard:", err);
-                        listContainer.innerHTML = '<div class="text-center py-6 text-red-400 text-xs">Unable to sync leaderboard.</div>';
-                    });
-                /* END_FB_ONLY */
+                
             } else {
                 // Poki/Mock: Local simulated leaderboard
                 listContainer.innerHTML = '';
