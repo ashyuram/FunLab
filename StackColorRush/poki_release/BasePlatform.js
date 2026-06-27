@@ -28,100 +28,106 @@ class BasePlatform {
 
     setupRobustMockSDKs(force = false) {
         // Fallback stubs for Poki
-        if (this.isLocalHost || force || !window.PokiSDK || typeof window.PokiSDK.init !== 'function') {
-            window.PokiSDK = {
-                init: () => new Promise((resolve) => {
-                    console.log("[PokiSDK Mock] Initialized successfully");
-                    resolve(true);
-                }),
-                gameplayStart: () => console.log("[PokiSDK Mock] gameplayStart"),
-                gameplayStop: () => console.log("[PokiSDK Mock] gameplayStop"),
-                commercialBreak: () => new Promise((resolve) => {
-                    console.log("[PokiSDK Mock] commercialBreak running");
-                    resolve();
-                }),
-                rewardedBreak: () => new Promise((resolve) => {
-                    console.log("[PokiSDK Mock] rewardedBreak running");
-                    resolve(true);
-                })
-            };
+        if (this.isLocalHost || force) {
+            if (!window.PokiSDK || typeof window.PokiSDK.init !== 'function') {
+                window.PokiSDK = {
+                    init: () => new Promise((resolve) => {
+                        console.log("[PokiSDK Mock] Initialized successfully");
+                        resolve(true);
+                    }),
+                    gameplayStart: () => console.log("[PokiSDK Mock] gameplayStart"),
+                    gameplayStop: () => console.log("[PokiSDK Mock] gameplayStop"),
+                    commercialBreak: () => new Promise((resolve) => {
+                        console.log("[PokiSDK Mock] commercialBreak running");
+                        resolve();
+                    }),
+                    rewardedBreak: () => new Promise((resolve) => {
+                        console.log("[PokiSDK Mock] rewardedBreak running");
+                        resolve(true);
+                    })
+                };
+            }
         }
 
         // Fallback stubs for Facebook Instant Games
-        if (this.isLocalHost || force || !window.FBInstant || typeof window.FBInstant.initializeAsync !== 'function') {
-            window.FBInstant = {
-                initializeAsync: () => new Promise((resolve) => {
-                    console.log("[FBInstant Mock] initializeAsync started");
-                    resolve();
-                }),
-                setLoadingProgress: (prog) => console.log(`[FBInstant Mock] loadingProgress: ${prog}%`),
-                startGameAsync: () => new Promise((resolve) => {
-                    console.log("[FBInstant Mock] startGameAsync completed");
-                    resolve();
-                }),
-                player: {
-                    getName: () => "Local Slime Master",
-                    getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME",
-                    getID: () => "12345678"
-                },
-                getLeaderboardAsync: (name) => new Promise((resolve) => {
-                    resolve({
-                        getName: () => name,
-                        setScoreAsync: (score) => {
-                            console.log(`[FBInstant Mock] setScoreAsync to: ${score}`);
-                            return Promise.resolve({ getScore: () => score });
-                        },
-                        getEntriesAsync: (limit, offset) => {
-                            return Promise.resolve([
-                                { getRank: () => 1, getScore: () => 48200, getPlayer: () => ({ getName: () => "Me (Player)", getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME" }) },
-                                { getRank: () => 2, getScore: () => 38120, getPlayer: () => ({ getName: () => "Sophia Kim", getPhoto: () => "https://placehold.co/150x150/ec4899/ffffff?text=JY" }) },
-                                { getRank: () => 3, getScore: () => 24950, getPlayer: () => ({ getName: () => "David Park", getPhoto: () => "https://placehold.co/150x150/f59e0b/ffffff?text=JS" }) }
-                            ]);
-                        }
-                    });
-                }),
-                shareAsync: (config) => {
-                    console.log("[FBInstant Mock] shareAsync triggered:", config);
-                    return Promise.resolve();
-                },
-                context: {
-                    chooseAsync: () => {
-                        console.log("[FBInstant Mock] context.chooseAsync triggered");
+        if (this.isLocalHost || force) {
+            if (!window.FBInstant || typeof window.FBInstant.initializeAsync !== 'function') {
+                window.FBInstant = {
+                    initializeAsync: () => new Promise((resolve) => {
+                        console.log("[FBInstant Mock] initializeAsync started");
+                        resolve();
+                    }),
+                    setLoadingProgress: (prog) => console.log(`[FBInstant Mock] loadingProgress: ${prog}%`),
+                    startGameAsync: () => new Promise((resolve) => {
+                        console.log("[FBInstant Mock] startGameAsync completed");
+                        resolve();
+                    }),
+                    player: {
+                        getName: () => "Local Slime Master",
+                        getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME",
+                        getID: () => "12345678"
+                    },
+                    getLeaderboardAsync: (name) => new Promise((resolve) => {
+                        resolve({
+                            getName: () => name,
+                            setScoreAsync: (score) => {
+                                console.log(`[FBInstant Mock] setScoreAsync to: ${score}`);
+                                return Promise.resolve({ getScore: () => score });
+                            },
+                            getEntriesAsync: (limit, offset) => {
+                                return Promise.resolve([
+                                    { getRank: () => 1, getScore: () => 48200, getPlayer: () => ({ getName: () => "Me (Player)", getPhoto: () => "https://placehold.co/150x150/06b6d4/ffffff?text=ME" }) },
+                                    { getRank: () => 2, getScore: () => 38120, getPlayer: () => ({ getName: () => "Sophia Kim", getPhoto: () => "https://placehold.co/150x150/ec4899/ffffff?text=JY" }) },
+                                    { getRank: () => 3, getScore: () => 24950, getPlayer: () => ({ getName: () => "David Park", getPhoto: () => "https://placehold.co/150x150/f59e0b/ffffff?text=JS" }) }
+                                ]);
+                            }
+                        });
+                    }),
+                    shareAsync: (config) => {
+                        console.log("[FBInstant Mock] shareAsync triggered:", config);
                         return Promise.resolve();
+                    },
+                    context: {
+                        chooseAsync: () => {
+                            console.log("[FBInstant Mock] context.chooseAsync triggered");
+                            return Promise.resolve();
+                        }
                     }
-                }
-            };
+                };
+            }
         }
 
         // Fallback stubs for CrazyGames
-        if (this.isLocalHost || force || !window.CrazyGames || !window.CrazyGames.SDK) {
-            window.CrazyGames = {
-                SDK: {
-                    init: () => new Promise((resolve) => {
-                        console.log("[CrazyGames SDK Mock] Initialized successfully");
-                        resolve();
-                    }),
-                    game: {
-                        loadingStart: () => console.log("[CrazyGames SDK Mock] loadingStart"),
-                        loadingStop: () => console.log("[CrazyGames SDK Mock] loadingStop"),
-                        gameplayStart: () => console.log("[CrazyGames SDK Mock] gameplayStart"),
-                        gameplayStop: () => console.log("[CrazyGames SDK Mock] gameplayStop"),
-                        happytime: () => console.log("[CrazyGames SDK Mock] happytime")
-                    },
-                    ad: {
-                        requestAd: (type, callbacks) => {
-                            console.log(`[CrazyGames SDK Mock] requestAd: ${type}`);
-                            if (callbacks && typeof callbacks.adStarted === 'function') callbacks.adStarted();
-                            setTimeout(() => {
-                                if (callbacks && typeof callbacks.adFinished === 'function') callbacks.adFinished();
-                                if (type === 'rewarded') {
-                                    if (typeof claimAdReward === 'function') claimAdReward();
-                                }
-                            }, 1000);
+        if (this.isLocalHost || force) {
+            if (!window.CrazyGames || !window.CrazyGames.SDK || typeof window.CrazyGames.SDK.init !== 'function') {
+                window.CrazyGames = {
+                    SDK: {
+                        init: () => new Promise((resolve) => {
+                            console.log("[CrazyGames SDK Mock] Initialized successfully");
+                            resolve();
+                        }),
+                        game: {
+                            loadingStart: () => console.log("[CrazyGames SDK Mock] loadingStart"),
+                            loadingStop: () => console.log("[CrazyGames SDK Mock] loadingStop"),
+                            gameplayStart: () => console.log("[CrazyGames SDK Mock] gameplayStart"),
+                            gameplayStop: () => console.log("[CrazyGames SDK Mock] gameplayStop"),
+                            happytime: () => console.log("[CrazyGames SDK Mock] happytime")
+                        },
+                        ad: {
+                            requestAd: (type, callbacks) => {
+                                console.log(`[CrazyGames SDK Mock] requestAd: ${type}`);
+                                if (callbacks && typeof callbacks.adStarted === 'function') callbacks.adStarted();
+                                setTimeout(() => {
+                                    if (callbacks && typeof callbacks.adFinished === 'function') callbacks.adFinished();
+                                    if (type === 'rewarded') {
+                                        if (typeof claimAdReward === 'function') claimAdReward();
+                                    }
+                                }, 1000);
+                            }
                         }
                     }
-                }
-            };
+                };
+            }
         }
     }
 
