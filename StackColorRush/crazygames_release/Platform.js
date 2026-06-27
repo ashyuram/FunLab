@@ -1,4 +1,11 @@
 class Platform extends BasePlatform {
+    constructor() {
+        super();
+        // Set to true to pass CrazyGames' Basic Launch QA requirements (no ad calls allowed).
+        // Switch to false once your game is approved for Full Launch to enable real monetization ads.
+        this.bypassAdsForBasicLaunch = true;
+    }
+
     init() {
         console.log("[CrazyGames SDK] init() triggered");
         return new Promise((resolve) => {
@@ -11,8 +18,17 @@ class Platform extends BasePlatform {
                 }
 
                 if (window.CrazyGames && window.CrazyGames.SDK) {
-                    console.log("[CrazyGames SDK] SDK objects found on window. Automatically initialized.");
-                    resolve();
+                    console.log("[CrazyGames SDK] Calling window.CrazyGames.SDK.init()...");
+                    window.CrazyGames.SDK.init()
+                        .then(() => {
+                            console.log("[CrazyGames SDK] SDK.init() resolved successfully");
+                            resolve();
+                        })
+                        .catch((err) => {
+                            console.error("[CrazyGames SDK] SDK.init() failed or rejected:", err);
+                            this.setupRobustMockSDKs(true);
+                            resolve();
+                        });
                 } else {
                     console.warn("[CrazyGames SDK] window.CrazyGames or SDK object not found on window, fallback to mock");
                     this.setupRobustMockSDKs(true);
@@ -62,8 +78,8 @@ class Platform extends BasePlatform {
 
     showInterstitial() {
         console.log("[CrazyGames SDK] showInterstitial() triggered");
-        if (this.isLocalHost) {
-            console.log("[CrazyGames SDK] Localhost simulation, skipping actual requestAd('midgame')");
+        if (this.isLocalHost || this.bypassAdsForBasicLaunch) {
+            console.log("[CrazyGames SDK] Localhost or Basic Launch bypass active, skipping actual requestAd('midgame')");
             return Promise.resolve();
         }
         return new Promise((resolve) => {
@@ -88,8 +104,8 @@ class Platform extends BasePlatform {
     showRewarded(type) {
         console.log(`[CrazyGames SDK] showRewarded() triggered with type: ${type}`);
         adRewardType = type;
-        if (this.isLocalHost) {
-            console.log("[CrazyGames SDK] Localhost simulation, triggering mock claimAdReward()");
+        if (this.isLocalHost || this.bypassAdsForBasicLaunch) {
+            console.log("[CrazyGames SDK] Localhost or Basic Launch bypass active, triggering immediate claimAdReward()");
             claimAdReward();
             return Promise.resolve();
         }
